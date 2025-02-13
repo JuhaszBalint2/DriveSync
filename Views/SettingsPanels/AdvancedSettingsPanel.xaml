@@ -1,0 +1,61 @@
+﻿<UserControl x:Class="DriveSync.WPF.Views.SettingsPanels.AdvancedSettingsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:DriveSync.WPF.Localization">
+    <StackPanel>
+        <!-- Error Handling and Retry Section -->
+        <Border Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="24"
+                Margin="0,0,0,24">
+            <StackPanel>
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ErrorHandling]}"
+                           Style="{DynamicResource SubheadingStyle}"
+                           Margin="0,0,0,16"/>
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[RetryCount]}"
+                           Style="{DynamicResource BodyTextStyle}"
+                           Margin="0,0,0,8"/>
+                <TextBox x:Name="RetryCountTextBox"
+                         Height="28"
+                         Width="200"
+                         HorizontalAlignment="Left"
+                         ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[RetryCountTooltip]}"/>
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ConnectionTimeout]}"
+                           Style="{DynamicResource BodyTextStyle}"
+                           Margin="0,16,0,8"/>
+                <TextBox x:Name="ConnectTimeoutTextBox"
+                         Height="28"
+                         Width="200"
+                         HorizontalAlignment="Left"
+                         ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ConnectionTimeoutTooltip]}"/>
+            </StackPanel>
+        </Border>
+        <!-- Advanced Transfer Options -->
+        <Border Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="24">
+            <StackPanel>
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[AdvancedTransferOptions]}"
+                           Style="{DynamicResource SubheadingStyle}"
+                           Margin="0,0,0,16"/>
+                <CheckBox x:Name="FastListCheckBox"
+                          Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[UseFastList]}"
+                          ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[FastListTooltip]}"
+                          Margin="0,0,0,12"/>
+                <CheckBox x:Name="NoTraversalCheckBox"
+                          Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DisableDirectoryTraversal]}"
+                          ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DisableDirectoryTraversalTooltip]}"
+                          Margin="0,0,0,12"/>
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PerformanceWarning]}"
+                           Style="{DynamicResource BodyTextStyle}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           Margin="0,16,0,0"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

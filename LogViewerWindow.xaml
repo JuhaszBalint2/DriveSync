@@ -1,0 +1,82 @@
+﻿<Window x:Class="DriveSync.WPF.Views.LogViewerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:DriveSync.WPF.Localization"
+        Title="Sync Log" 
+        Height="600" 
+        Width="1000"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        Background="{DynamicResource BackgroundBrush}">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <!-- Header -->
+        <DockPanel Grid.Row="0" LastChildFill="True" Margin="0,0,0,16">
+            <TextBlock Text="Sync Operation Log"
+                      Style="{DynamicResource SubheadingStyle}"
+                      DockPanel.Dock="Left"/>
+            <StackPanel Orientation="Horizontal" 
+                        DockPanel.Dock="Right" 
+                        HorizontalAlignment="Right"
+                        Margin="16,0,0,0">
+                <Button x:Name="CopyButton"
+        Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CopyLog]}"
+        Style="{DynamicResource ButtonBaseStyle}"
+        MinWidth="120"
+        Width="Auto"
+        Height="28"
+        Padding="12,0"
+        Margin="0,0,8,0"
+        Click="CopyButton_Click"/>
+
+                <Button x:Name="ExportButton"
+        Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Export]}"
+        Style="{DynamicResource ButtonBaseStyle}"
+        MinWidth="120"
+        Width="Auto"
+        Height="28"
+        Padding="12,0"
+        Click="ExportButton_Click"/>
+            </StackPanel>
+        </DockPanel>
+        <!-- Log Content -->
+        <ScrollViewer Grid.Row="1"
+                     x:Name="LogScroller"
+                     HorizontalScrollBarVisibility="Auto"
+                     VerticalScrollBarVisibility="Auto"
+                     Background="{DynamicResource SurfaceBrush}"
+                     BorderBrush="{DynamicResource BorderDefaultBrush}"
+                     BorderThickness="1">
+            <TextBlock x:Name="LogTextBlock"
+                      FontFamily="Consolas"
+                      FontSize="12"
+                      Padding="12"
+                      TextWrapping="NoWrap"
+                      Foreground="{DynamicResource TextPrimaryBrush}"/>
+        </ScrollViewer>
+        <!-- Footer -->
+        <DockPanel Grid.Row="2" 
+                   Margin="0,16,0,0"
+                   LastChildFill="False">
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                <TextBlock x:Name="OperationCountText"
+                          Style="{DynamicResource BodyTextStyle}"
+                          Margin="0,0,16,0"/>
+                <TextBlock x:Name="TimestampText"
+                          Style="{DynamicResource BodyTextStyle}"/>
+            </StackPanel>
+            <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Close]}"
+        Style="{DynamicResource ButtonBaseStyle}"
+        MinWidth="120"
+        Width="Auto"
+        Height="28"
+        Padding="12,0"
+        DockPanel.Dock="Right"
+        Click="CloseButton_Click"/>
+        </DockPanel>
+    </Grid>
+</Window>

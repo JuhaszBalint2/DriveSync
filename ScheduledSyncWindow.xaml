@@ -1,0 +1,353 @@
+﻿<views:ModernWindowBase 
+        x:Class="DriveSync.WPF.Views.ScheduledSyncWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:DriveSync.WPF.Localization"
+        xmlns:views="clr-namespace:DriveSync.WPF.Views"
+        Title="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ScheduleSyncTitle]}"
+        Height="560"
+        Width="700"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BackgroundBrush}">
+
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Heading -->
+        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ScheduleSyncTitle]}" 
+                   Style="{DynamicResource HeadingStyle}" 
+                   Margin="0,0,0,8"/>
+
+        <!-- Main Tabs -->
+        <TabControl Grid.Row="1" Margin="0,0,0,8">
+            <!-- GENERAL TAB -->
+            <TabItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[General]}">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- SOURCE & TARGET SELECTION -->
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- SOURCE -->
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SourceRemote]}" 
+                                       Margin="0,0,0,4"
+                                       Style="{DynamicResource BodyTextStyle}"/>
+                            <ComboBox ItemsSource="{Binding AvailableRemotes}"
+                                      SelectedItem="{Binding SelectedSourceRemote}"
+                                      Height="28" 
+                                      Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Browse Button -->
+                                <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Browse]}"
+                                        Style="{DynamicResource ButtonBaseStyle}"
+                                        MinWidth="90"
+                                        Height="28"
+                                        Click="BrowseSource_Click"
+                                        Margin="0,0,8,0"/>
+
+                                <!-- Border + TextBlock for SourcePath -->
+                                <Border Grid.Column="1"
+                                        Background="{DynamicResource SurfaceBrush}"
+                                        BorderBrush="{DynamicResource BorderDefaultBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Height="28"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding SourcePath}"
+                                               ToolTip="{Binding SourcePath}"
+                                               VerticalAlignment="Center"
+                                               TextWrapping="NoWrap"
+                                               TextTrimming="CharacterEllipsis"
+                                               Margin="8,0"/>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+                        <!-- Arrow -->
+                        <TextBlock Grid.Column="1" 
+                                   Text="➔" 
+                                   FontSize="24" 
+                                   Margin="8,0"
+                                   VerticalAlignment="Center"
+                                   Style="{DynamicResource BodyTextStyle}"/>
+
+                        <!-- TARGET -->
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[TargetRemote]}" 
+                                       Margin="0,0,0,4"
+                                       Style="{DynamicResource BodyTextStyle}"/>
+                            <ComboBox ItemsSource="{Binding AvailableRemotes}"
+                                      SelectedItem="{Binding SelectedTargetRemote}"
+                                      Height="28" 
+                                      Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Browse Button -->
+                                <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Browse]}"
+                                        Style="{DynamicResource ButtonBaseStyle}"
+                                        MinWidth="90"
+                                        Height="28"
+                                        Click="BrowseTarget_Click"
+                                        Margin="0,0,8,0"/>
+
+                                <!-- Border + TextBlock for TargetPath -->
+                                <Border Grid.Column="1"
+                                        Background="{DynamicResource SurfaceBrush}"
+                                        BorderBrush="{DynamicResource BorderDefaultBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Height="28"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding TargetPath}"
+                                               ToolTip="{Binding TargetPath}"
+                                               VerticalAlignment="Center"
+                                               TextWrapping="NoWrap"
+                                               TextTrimming="CharacterEllipsis"
+                                               Margin="8,0"/>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- SYNC MODE -->
+                    <StackPanel Grid.Row="1" Margin="0,16,0,0">
+                        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncMode]}" 
+                                   Style="{DynamicResource BodyTextStyle}"/>
+                        <ComboBox ItemsSource="{Binding AvailableSyncModes}"
+                                  SelectedItem="{Binding SelectedSyncMode}"
+                                  Height="28" 
+                                  Width="200"
+                                  Margin="0,4,0,0"
+                                  HorizontalAlignment="Left">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Value, Converter={StaticResource LocalizationConverter}}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+                    <!-- SCHEDULE OPTIONS -->
+                    <Grid Grid.Row="2" Margin="0,16,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="32"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Start Date -->
+                        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[StartDate]}" 
+                                   Style="{DynamicResource BodyTextStyle}"
+                                   VerticalAlignment="Center"
+                                   Grid.Column="0" Grid.Row="0"/>
+                        <DatePicker x:Name="StartDatePicker"
+                                    Grid.Column="1" Grid.Row="0"
+                                    Height="28"
+                                    Margin="8,0,0,0"
+                                    VerticalAlignment="Center"/>
+
+                        <!-- Time -->
+                        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[StartTime]}"
+                                   Style="{DynamicResource BodyTextStyle}"
+                                   Grid.Column="3" Grid.Row="0"
+                                   VerticalAlignment="Center"/>
+                        <ComboBox x:Name="StartTimeCombo"
+                                  Grid.Column="4" Grid.Row="0"
+                                  Height="28" 
+                                  Margin="8,0,0,0"
+                                  VerticalAlignment="Center"/>
+
+                        <!-- Repeat -->
+                        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Repeat]}" 
+                                   Style="{DynamicResource BodyTextStyle}"
+                                   Grid.Column="0" Grid.Row="1"
+                                   VerticalAlignment="Center"
+                                   Margin="0,16,0,0"/>
+                        <ComboBox x:Name="RepeatTypeCombo"
+                                  Grid.Column="1" Grid.Row="1"
+                                  Height="28"
+                                  Margin="8,16,0,0">
+                            <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[OneTimeSyncOption]}"/>
+                            <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DailySyncOption]}"/>
+                            <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[WeeklySyncOption]}"/>
+                            <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[MonthlySyncOption]}"/>
+                        </ComboBox>
+                    </Grid>
+                </Grid>
+            </TabItem>
+            <!-- CONDITIONS TAB -->
+            <TabItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Conditions]}">
+                <Grid Margin="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PowerSettingsSection]}" 
+                                   Style="{DynamicResource SubheadingStyle}"
+                                   Margin="0,0,0,4"/>
+                        <CheckBox x:Name="OnACPowerCheckBox"
+                                  Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[OnACPowerStart]}"
+                                  Margin="0,0,0,4"/>
+                        <CheckBox x:Name="StopOnBatteryCheckBox"
+                                  Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[StopOnBattery]}"
+                                  Margin="0,0,0,4"/>
+                        <CheckBox x:Name="WakeToRunCheckBox"
+                                  Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[WakeToRun]}"
+                                  Margin="0,0,0,8"/>
+
+                        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[IdleSettingsSection]}"
+                                   Style="{DynamicResource SubheadingStyle}"
+                                   Margin="0,8,0,4"/>
+                        <CheckBox x:Name="RunOnlyIfIdleCheckBox"
+                                  Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[RunOnlyIfIdle]}"
+                                  Margin="0,0,0,4"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[IdleDuration]}"
+                                       Style="{DynamicResource BodyTextStyle}"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,8,0"/>
+                            <TextBox x:Name="IdleDurationBox"
+                                     Width="60"
+                                     Height="24"/>
+                            <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Minutes]}"
+                                       Style="{DynamicResource BodyTextStyle}"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[NetworkSettingsSection]}"
+                                   Style="{DynamicResource SubheadingStyle}"
+                                   Margin="0,0,0,4"/>
+                        <CheckBox x:Name="RunOnlyIfNetworkAvailableCheckBox"
+                                  Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[RunOnlyIfNetworkAvailable]}"
+                                  Margin="0,0,0,4"/>
+                        <ComboBox x:Name="NetworkCombo"
+                                  Height="28" 
+                                  Margin="0,0,0,8">
+                            <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[AnyNetwork]}"/>
+                        </ComboBox>
+
+                        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[AdditionalSettingsSection]}"
+                                   Style="{DynamicResource SubheadingStyle}"
+                                   Margin="0,8,0,4"/>
+                        <CheckBox x:Name="StartWhenAvailableCheckBox"
+                                  Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[StartWhenMissed]}"
+                                  Margin="0,0,0,4"/>
+                        <CheckBox x:Name="AllowDemandStartCheckBox"
+                                  Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[AllowDemandStart]}"
+                                  Margin="0,0,0,4"/>
+                        <CheckBox x:Name="ForceKillCheckBox"
+                                  Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ForceStopIfNotEnding]}"
+                                  Margin="0,0,0,4"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+            <!-- SETTINGS TAB -->
+            <TabItem Header="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Settings]}">
+                <Grid Margin="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[TaskSettingsSection]}"
+                                   Style="{DynamicResource SubheadingStyle}"
+                                   Margin="0,0,0,4"/>
+                        <CheckBox x:Name="DisableTaskCheckBox"
+                                  Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DisableTask]}"
+                                  Margin="0,0,0,4"/>
+                        <CheckBox x:Name="HiddenTaskCheckBox"
+                                  Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HiddenTask]}"
+                                  Margin="0,0,0,8"/>
+
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox x:Name="StopAfterCheckBox"
+                                      Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[StopAfter]}"
+                                      VerticalAlignment="Center"
+                                      Margin="0,0,8,0"/>
+                            <TextBox x:Name="ExecutionTimeLimitBox"
+                                     Width="60"
+                                     Height="24"/>
+                            <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Minutes]}"
+                                       Style="{DynamicResource BodyTextStyle}"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[InstanceHandlingSection]}"
+                                   Style="{DynamicResource SubheadingStyle}"
+                                   Margin="0,0,0,4"/>
+                        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[IfTaskRunning]}"
+                                   Style="{DynamicResource BodyTextStyle}"
+                                   Margin="0,0,0,4"/>
+                        <ComboBox x:Name="MultipleInstancesCombo"
+                                  Height="28" 
+                                  Width="200"
+                                  HorizontalAlignment="Left">
+                            <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[QueueInstances]}"/>
+                            <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[StopExistingInstances]}"/>
+                            <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[IgnoreNewInstances]}"/>
+                            <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ParallelInstances]}"/>
+                        </ComboBox>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <!-- ACTION BUTTONS -->
+        <StackPanel Grid.Row="2" 
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CreateTask]}"
+                    Style="{DynamicResource ButtonBaseStyle}"
+                    MinWidth="120"
+                    Width="Auto"
+                    Padding="12,0"
+                    Height="28"
+                    Margin="0,0,8,0"
+                    Click="CreateTaskButton_Click"/>
+            <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Cancel]}"
+                    Style="{DynamicResource ButtonBaseStyle}"
+                    MinWidth="120"
+                    Width="Auto"
+                    Padding="12,0"
+                    Height="28"
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</views:ModernWindowBase>

@@ -1,0 +1,101 @@
+﻿<UserControl x:Class="DriveSync.WPF.Views.SettingsPanels.GeneralSettingsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:DriveSync.WPF.Localization">
+    <StackPanel>
+        <!-- Rclone Configuration Section -->
+        <Border Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="24"
+                Margin="0,0,0,24">
+            <StackPanel>
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[RcloneConfiguration]}"
+                           Style="{DynamicResource SubheadingStyle}"
+                           Margin="0,0,0,16"/>
+
+                <!-- Rclone Path -->
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[RcloneExecutablePath]}"
+                           Style="{DynamicResource BodyTextStyle}"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,8"/>
+
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox x:Name="RclonePathTextBox"
+                             Height="36"
+                             VerticalContentAlignment="Center"/>
+
+                    <Button Grid.Column="1"
+                            Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BrowseRclone]}"
+                            Style="{DynamicResource ButtonBaseStyle}"
+                            MinWidth="100"
+                            Height="36"
+                            Margin="8,0,0,0"
+                            Click="BrowseRclone_Click"/>
+                </Grid>
+
+                <!-- Default Sync Mode -->
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DefaultSyncMode]}"
+                           Style="{DynamicResource BodyTextStyle}"
+                           FontWeight="SemiBold"
+                           Margin="0,0,0,8"/>
+
+                <ComboBox x:Name="DefaultSyncModeCombo"
+                          Height="36"
+                          Width="240"
+                          HorizontalAlignment="Left"
+                          SelectedIndex="0"
+                          Margin="0,0,0,16">
+                    <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncModeOption1]}"/>
+                    <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncModeOption2]}"/>
+                    <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncModeOption3]}"/>
+                </ComboBox>
+            </StackPanel>
+        </Border>
+
+        <!-- Operation Behavior Section -->
+        <Border Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="24">
+            <StackPanel>
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[StartupBehavior]}"
+                           Style="{DynamicResource SubheadingStyle}"
+                           Margin="0,0,0,16"/>
+
+                <CheckBox x:Name="FastListCheckBox"
+                          Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[FastListFlag]}"
+                          ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[FastListTooltip]}"
+                          Margin="0,0,0,12"/>
+
+                <CheckBox x:Name="UseServerModTimeCheckBox"
+                          Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[UseServerModTimeFlag]}"
+                          ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[UseServerModTimeTooltip]}"
+                          Margin="0,0,0,12"/>
+
+                <CheckBox x:Name="CheckAccessCheckBox"
+                          Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CheckAccessFlag]}"
+                          ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CheckAccessTooltip]}"
+                          Margin="0,0,0,12"/>
+
+                <CheckBox x:Name="CreateEmptyDirsCheckBox"
+                          Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CreateEmptyDirsFlag]}"
+                          ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CreateEmptyDirsTooltip]}"
+                          Margin="0,0,0,12"/>
+
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[RestartRequired]}"
+                           Style="{DynamicResource BodyTextStyle}"
+                           Foreground="{DynamicResource ErrorBrush}"
+                           FontStyle="Italic"
+                           Margin="0,8,0,0"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

@@ -1,0 +1,86 @@
+﻿<UserControl x:Class="DriveSync.WPF.Views.SettingsPanels.PerformanceSettingsPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="clr-namespace:DriveSync.WPF.Localization">
+    <StackPanel>
+        <!-- Transfer Settings Group -->
+        <Border Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="24"
+                Margin="0,0,0,24">
+            <StackPanel>
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[TransferSettings]}"
+                           Style="{DynamicResource SubheadingStyle}"
+                           Margin="0,0,0,16"/>
+
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ParallelTransfers]}"
+                           Style="{DynamicResource BodyTextStyle}"
+                           Margin="0,0,0,8"/>
+                <TextBox x:Name="TransfersTextBox"
+                         Height="28"
+                         Width="200"
+                         ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ParallelTransfersTooltip]}"
+                         HorizontalAlignment="Left"/>
+
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CheckWorkers]}"
+                           Style="{DynamicResource BodyTextStyle}"
+                           Margin="0,16,0,8"/>
+                <TextBox x:Name="CheckersTextBox"
+                         Height="28"
+                         Width="200"
+                         ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CheckWorkersTooltip]}"
+                         HorizontalAlignment="Left"/>
+
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BufferSize]}"
+                           Style="{DynamicResource BodyTextStyle}"
+                           Margin="0,16,0,8"/>
+                <TextBox x:Name="BufferSizeTextBox"
+                         Height="28"
+                         Width="200"
+                         ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BufferSizeTooltip]}"
+                         HorizontalAlignment="Left"/>
+
+                <CheckBox x:Name="UseMemoryMappingCheckBox"
+                          Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[UseMemoryMapping]}"
+                          ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[UseMemoryMappingTooltip]}"
+                          Margin="0,16,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Bandwidth Control -->
+        <Border Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="24">
+            <StackPanel>
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BandwidthControl]}"
+                           Style="{DynamicResource SubheadingStyle}"
+                           Margin="0,0,0,16"/>
+
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BandwidthLimitMiBs]}"
+                           Style="{DynamicResource BodyTextStyle}"
+                           Margin="0,0,0,8"/>
+                <TextBox x:Name="BandwidthLimitTextBox"
+                         Height="28"
+                         Width="200"
+                         ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BandwidthLimitTooltip]}"
+                         HorizontalAlignment="Left"/>
+
+                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CutoffMode]}"
+                           Style="{DynamicResource BodyTextStyle}"
+                           Margin="0,16,0,8"/>
+                <ComboBox x:Name="CutoffModeCombo"
+                          Height="28"
+                          Width="200"
+                          ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CutoffModeTooltip]}"
+                          HorizontalAlignment="Left">
+                    <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CutoffModeHard]}"/>
+                    <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CutoffModeSoft]}"/>
+                </ComboBox>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>
