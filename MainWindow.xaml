@@ -10,10 +10,17 @@
     xmlns:views="clr-namespace:DriveSync.WPF.Views"
     mc:Ignorable="d"
     Title="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ApplicationTitle]}"
+    SizeToContent="Manual"
     Height="637"
     Width="935"
+    MinHeight="500"
+    MinWidth="800"
     WindowStartupLocation="CenterScreen"
-    Background="{DynamicResource BackgroundBrush}">
+    Background="{DynamicResource BackgroundBrush}"
+    UseLayoutRounding="True"
+    SnapsToDevicePixels="True"
+    TextOptions.TextFormattingMode="Display"
+    TextOptions.TextRenderingMode="ClearType">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -30,59 +37,62 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
+            <!-- Title -->
             <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ApplicationTitle]}"
                        Grid.Column="0"
                        Style="{DynamicResource HeadingStyle}"
                        Foreground="White"
+                       FontSize="24"
                        VerticalAlignment="Center"
-                       Margin="17,8"/>
+                       Margin="17,12"/>
 
+            <!-- Action Buttons -->
             <StackPanel Grid.Column="2" 
-            Orientation="Horizontal" 
-            HorizontalAlignment="Right"
-            Margin="17,8">
+                        Orientation="Horizontal" 
+                        HorizontalAlignment="Right"
+                        Margin="17,12">
                 <Button Content="{Binding ButtonText}"
-            Command="{Binding SyncCommand}"
-            Style="{DynamicResource ButtonBaseStyle}"
-            IsEnabled="{Binding IsValid}"
-            MinWidth="102"
-            Width="Auto"
-            Height="28"
-            Padding="10,4"
-            Margin="0,0,8,0"/>
+                        Command="{Binding SyncCommand}"
+                        Style="{DynamicResource ButtonBaseStyle}"
+                        IsEnabled="{Binding IsValid}"
+                        MinWidth="102"
+                        Height="32"
+                        Padding="16,4"
+                        Margin="0,0,8,0"/>
+
                 <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Schedule]}"
-            Command="{Binding ScheduleSyncCommand}"
-            Style="{DynamicResource ButtonBaseStyle}"
-            MinWidth="102"
-            Width="Auto"
-            Height="28"
-            Padding="10,4"
-            Margin="0,0,8,0"/>
+                        Command="{Binding ScheduleSyncCommand}"
+                        Style="{DynamicResource ButtonBaseStyle}"
+                        MinWidth="102"
+                        Height="32"
+                        Padding="16,4"
+                        Margin="0,0,8,0"/>
+
                 <ComboBox x:Name="LanguageComboBox"
-              MinWidth="85"
-              Width="Auto"
-              Height="28"
-              FontFamily="Segoe UI"
-              FontSize="12"
-              Margin="0,0,8,0"
-              SelectionChanged="LanguageComboBox_SelectionChanged">
+                         MinWidth="85"
+                         Height="32"
+                         FontFamily="Segoe UI"
+                         FontSize="13"
+                         Margin="0,0,8,0"
+                         VerticalContentAlignment="Center"
+                         SelectionChanged="LanguageComboBox_SelectionChanged">
                     <ComboBoxItem Content="English" 
-                      IsSelected="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=CurrentLanguage, Converter={StaticResource EnglishSelectedConverter}}"/>
+                                 IsSelected="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=CurrentLanguage, Converter={StaticResource EnglishSelectedConverter}}"/>
                     <ComboBoxItem Content="Magyar" 
-                      IsSelected="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=CurrentLanguage, Converter={StaticResource HungarianSelectedConverter}}"/>
+                                 IsSelected="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=CurrentLanguage, Converter={StaticResource HungarianSelectedConverter}}"/>
                 </ComboBox>
+
                 <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Settings]}"
-            Command="{Binding OpenSettingsCommand}"
-            Style="{DynamicResource ButtonBaseStyle}"
-            MinWidth="102"
-            Width="Auto"
-            Height="28"
-            Padding="10,4"/>
+                        Command="{Binding OpenSettingsCommand}"
+                        Style="{DynamicResource ButtonBaseStyle}"
+                        MinWidth="102"
+                        Height="32"
+                        Padding="16,4"/>
             </StackPanel>
         </Grid>
 
-        <!-- Main Content -->
-        <Grid Grid.Row="1" Margin="10">
+        <!-- Main Content Area -->
+        <Grid Grid.Row="1" Margin="20">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
@@ -90,7 +100,7 @@
             </Grid.RowDefinitions>
 
             <!-- Sync Configuration Area -->
-            <Grid Grid.Row="0" Margin="20">
+            <Grid Grid.Row="0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="2*"/>
                     <ColumnDefinition Width="1*"/>
@@ -106,8 +116,9 @@
                         Margin="0,0,13,0">
                     <StackPanel>
                         <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncConfiguration]}"
-                                   Style="{DynamicResource SubheadingStyle}"
-                                   Margin="0,0,0,13"/>
+                                 Style="{DynamicResource SubheadingStyle}"
+                                 FontSize="20"
+                                 Margin="0,0,0,16"/>
 
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -119,14 +130,16 @@
                             <!-- Source Panel -->
                             <DockPanel Grid.Column="0" Margin="0,0,7,0">
                                 <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Source]}"
-                                           Style="{DynamicResource BodyTextStyle}"
-                                           DockPanel.Dock="Top"
-                                           Margin="0,0,0,7"/>
+                                         Style="{DynamicResource BodyTextStyle}"
+                                         FontSize="13"
+                                         DockPanel.Dock="Top"
+                                         Margin="0,0,0,8"/>
                                 <ComboBox ItemsSource="{Binding AvailableRemotes}"
-                                          SelectedItem="{Binding SelectedSourceRemote}"
-                                          Height="29"
-                                          DockPanel.Dock="Top"
-                                          Margin="0,0,0,7"/>
+                                        SelectedItem="{Binding SelectedSourceRemote}"
+                                        Height="32"
+                                        DockPanel.Dock="Top"
+                                        FontSize="13"
+                                        Margin="0,0,0,8"/>
                                 <Grid DockPanel.Dock="Top">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
@@ -137,49 +150,49 @@
                                             Command="{Binding BrowseSourceCommand}"
                                             Style="{DynamicResource ButtonBaseStyle}"
                                             MinWidth="102"
-                                            Width="Auto"
-                                            Padding="10,0"
-                                            Height="24"
+                                            Height="32"
+                                            Padding="16,4"
                                             Grid.Column="0"
-                                            Margin="0,0,7,0"/>
+                                            Margin="0,0,8,0"/>
 
                                     <Border Grid.Column="1"
                                             Background="{DynamicResource SurfaceBrush}"
                                             BorderBrush="{DynamicResource BorderDefaultBrush}"
                                             BorderThickness="1"
-                                            Height="24"
-                                            CornerRadius="3"
-                                            Padding="7,0"
-                                            VerticalAlignment="Center">
+                                            Height="32"
+                                            CornerRadius="4">
                                         <TextBlock Text="{Binding SourcePath}"
-                                                   ToolTip="{Binding SourcePath}"
-                                                   VerticalAlignment="Center"
-                                                   TextWrapping="NoWrap"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                                 ToolTip="{Binding SourcePath}"
+                                                 VerticalAlignment="Center"
+                                                 Margin="8,0"
+                                                 FontSize="13"
+                                                 TextWrapping="NoWrap"
+                                                 TextTrimming="CharacterEllipsis"/>
                                     </Border>
                                 </Grid>
                             </DockPanel>
 
                             <!-- Arrow -->
                             <TextBlock Grid.Column="1"
-                                       Text="➔"
-                                       FontSize="24"
-                                       VerticalAlignment="Top"
-                                       Margin="13,27"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                     Text="➔"
+                                     FontSize="24"
+                                     VerticalAlignment="Top"
+                                     Margin="13,32"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"/>
 
                             <!-- Target Panel -->
                             <DockPanel Grid.Column="2" Margin="7,0,0,0">
                                 <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Target]}"
-                                           Style="{DynamicResource BodyTextStyle}"
-                                           DockPanel.Dock="Top"
-                                           Margin="0,0,0,7"/>
+                                         Style="{DynamicResource BodyTextStyle}"
+                                         FontSize="13"
+                                         DockPanel.Dock="Top"
+                                         Margin="0,0,0,8"/>
                                 <ComboBox ItemsSource="{Binding AvailableRemotes}"
-                                          SelectedItem="{Binding SelectedTargetRemote}"
-                                          Height="29"
-                                          DockPanel.Dock="Top"
-                                          Margin="0,0,0,7"/>
+                                        SelectedItem="{Binding SelectedTargetRemote}"
+                                        Height="32"
+                                        DockPanel.Dock="Top"
+                                        FontSize="13"
+                                        Margin="0,0,0,8"/>
                                 <Grid DockPanel.Dock="Top">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
@@ -190,26 +203,24 @@
                                             Command="{Binding BrowseTargetCommand}"
                                             Style="{DynamicResource ButtonBaseStyle}"
                                             MinWidth="102"
-                                            Width="Auto"
-                                            Padding="10,0"
-                                            Height="24"
+                                            Height="32"
+                                            Padding="16,4"
                                             Grid.Column="0"
-                                            Margin="0,0,7,0"/>
+                                            Margin="0,0,8,0"/>
 
                                     <Border Grid.Column="1"
                                             Background="{DynamicResource SurfaceBrush}"
                                             BorderBrush="{DynamicResource BorderDefaultBrush}"
                                             BorderThickness="1"
-                                            Height="24"
-                                            CornerRadius="3"
-                                            Padding="7,0"
-                                            VerticalAlignment="Center">
+                                            Height="32"
+                                            CornerRadius="4">
                                         <TextBlock Text="{Binding TargetPath}"
-                                                   ToolTip="{Binding TargetPath}"
-                                                   VerticalAlignment="Center"
-                                                   TextWrapping="NoWrap"
-                                                   TextTrimming="CharacterEllipsis"
-                                                   Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                                 ToolTip="{Binding TargetPath}"
+                                                 VerticalAlignment="Center"
+                                                 Margin="8,0"
+                                                 FontSize="13"
+                                                 TextWrapping="NoWrap"
+                                                 TextTrimming="CharacterEllipsis"/>
                                     </Border>
                                 </Grid>
                             </DockPanel>
@@ -217,31 +228,29 @@
 
                         <!-- Sync Mode Selection -->
                         <DockPanel LastChildFill="False" 
-                                   Margin="0,20,0,0">
+                                 Margin="0,24,0,0">
                             <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncMode]}"
-                                       Style="{DynamicResource BodyTextStyle}"
-                                       VerticalAlignment="Center"
-                                       DockPanel.Dock="Left"
-                                       Margin="0,0,7,0"/>
+                                     Style="{DynamicResource BodyTextStyle}"
+                                     FontSize="13"
+                                     VerticalAlignment="Center"
+                                     DockPanel.Dock="Left"
+                                     Margin="0,0,8,0"/>
                             <ComboBox ItemsSource="{Binding AvailableSyncModes}"
-                                      SelectedItem="{Binding SelectedSyncMode}"
-                                      Width="187"
-                                      Height="29"
-                                      FontFamily="Segoe UI"
-                                      FontSize="12"
-                                      DockPanel.Dock="Left">
+                                    SelectedItem="{Binding SelectedSyncMode}"
+                                    Width="200"
+                                    Height="32"
+                                    FontSize="13"
+                                    DockPanel.Dock="Left">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding DisplayName}" 
-                                                   FontFamily="Segoe UI" 
-                                                   FontSize="12"/>
+                                        <TextBlock Text="{Binding DisplayName}"
+                                                 FontSize="13"/>
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
                         </DockPanel>
                     </StackPanel>
                 </Border>
-
                 <!-- Sync History Panel -->
                 <Border Grid.Column="1"
                         Background="{DynamicResource SurfaceBrush}"
