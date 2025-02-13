@@ -9,6 +9,7 @@ using DriveSync.WPF.ViewModels;
 using DriveSync.WPF.Views;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace DriveSync.WPF
 {
@@ -16,8 +17,42 @@ namespace DriveSync.WPF
     {
         public static IServiceProvider ServiceProvider { get; private set; }
 
+        // DPI-related Win32 API imports
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool SetProcessDPIAware();
+
+        [DllImport("shcore.dll", SetLastError = true)]
+        private static extern int SetProcessDpiAwareness(PROCESS_DPI_AWARENESS awareness);
+
+        private enum PROCESS_DPI_AWARENESS
+        {
+            Process_DPI_Unaware = 0,
+            Process_System_DPI_Aware = 1,
+            Process_Per_Monitor_DPI_Aware = 2
+        }
+
         public App()
         {
+            // Enable proper DPI scaling
+            if (Environment.OSVersion.Version >= new Version(6, 3, 0))
+            {
+                // Windows 8.1 and above - Per Monitor DPI aware
+                try
+                {
+                    SetProcessDpiAwareness(PROCESS_DPI_AWARENESS.Process_Per_Monitor_DPI_Aware);
+                }
+                catch (Exception)
+                {
+                    // Fallback to older DPI awareness method
+                    SetProcessDPIAware();
+                }
+            }
+            else if (Environment.OSVersion.Version >= new Version(6, 0))
+            {
+                // Windows Vista and above - System DPI aware
+                SetProcessDPIAware();
+            }
+
             InitializeComponent();
             var serviceCollection = new ServiceCollection();
             ConfigureServices(serviceCollection);
@@ -50,13 +85,19 @@ namespace DriveSync.WPF
         {
             base.OnStartup(e);
 
+            // Enable DPI change awareness for WPF
+            if (Environment.OSVersion.Version >= new Version(10, 0, 15063))
+            {
+                System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.Default;
+            }
+
             var settings = AppSettings.Load();
             var mainViewModel = ServiceProvider.GetService<MainViewModel>();
             var logger = ServiceProvider.GetService<ILoggerFactory>().CreateLogger<App>();
 
             try
             {
-                // Apply the appropriate theme before showing any windows
+                // Rest of your startup code remains the same
                 if (mainViewModel != null)
                 {
                     string themeToApply = settings.UseSystemTheme ?
