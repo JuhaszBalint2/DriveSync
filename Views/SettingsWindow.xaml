@@ -6,14 +6,43 @@
     xmlns:views="clr-namespace:DriveSync.WPF.Views"
     xmlns:converters="clr-namespace:DriveSync.WPF.Converters"
     Title="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ApplicationSettings]}"
-    Height="700"
-    Width="1000"
+    Height="595"
+    Width="850"
     WindowStartupLocation="CenterOwner"
     Background="{DynamicResource BackgroundBrush}">
 
+    <views:ModernWindowBase.Resources>
+        <Style x:Key="SettingsComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Margin" Value="0,4,0,8"/>
+            <Setter Property="Padding" Value="7,3"/>
+        </Style>
+
+        <Style x:Key="SettingsTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Margin" Value="0,4,0,8"/>
+            <Setter Property="Padding" Value="7,3"/>
+        </Style>
+
+        <Style x:Key="SettingsCheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="Margin" Value="0,4,0,8"/>
+            <Setter Property="Padding" Value="7,3"/>
+        </Style>
+
+        <Style x:Key="SettingsBorderStyle" TargetType="Border">
+            <Setter Property="Padding" Value="17"/>
+            <Setter Property="Margin" Value="0,0,0,17"/>
+        </Style>
+
+        <Style x:Key="SettingsGroupBoxStyle" TargetType="GroupBox">
+            <Setter Property="Margin" Value="0,0,0,17"/>
+            <Setter Property="Padding" Value="10"/>
+        </Style>
+    </views:ModernWindowBase.Resources>
+
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="212"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
@@ -27,9 +56,9 @@
                 <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ApplicationSettings]}"
                            DockPanel.Dock="Top"
                            Foreground="{DynamicResource TextPrimaryBrush}"
-                           FontSize="20"
+                           FontSize="17"
                            FontWeight="SemiBold"
-                           Margin="20,24,20,24"/>
+                           Margin="17,17,17,17"/>
 
                 <!-- Navigation Items -->
                 <ListBox x:Name="SettingsNavigation"
@@ -39,8 +68,8 @@
                          SelectionChanged="SettingsNavigation_SelectionChanged">
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem">
-                            <Setter Property="Height" Value="40"/>
-                            <Setter Property="Padding" Value="20,0"/>
+                            <Setter Property="Height" Value="34"/>
+                            <Setter Property="Padding" Value="17,0"/>
                             <Setter Property="Background" Value="Transparent"/>
                             <Setter Property="Template">
                                 <Setter.Value>
@@ -70,32 +99,27 @@
                     <ListBoxItem>
                         <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PanelGeneral]}"
                                  Foreground="{DynamicResource TextPrimaryBrush}"
-                                 FontSize="14"/>
+                                 FontSize="12"/>
                     </ListBoxItem>
                     <ListBoxItem>
                         <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PanelInterface]}"
                                  Foreground="{DynamicResource TextPrimaryBrush}"
-                                 FontSize="14"/>
-                    </ListBoxItem>
-                    <ListBoxItem>
-                        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PanelSecurity]}"
-                                 Foreground="{DynamicResource TextPrimaryBrush}"
-                                 FontSize="14"/>
+                                 FontSize="12"/>
                     </ListBoxItem>
                     <ListBoxItem>
                         <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PanelSync]}"
                                  Foreground="{DynamicResource TextPrimaryBrush}"
-                                 FontSize="14"/>
+                                 FontSize="12"/>
                     </ListBoxItem>
                     <ListBoxItem>
                         <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PanelPerformance]}"
                                  Foreground="{DynamicResource TextPrimaryBrush}"
-                                 FontSize="14"/>
+                                 FontSize="12"/>
                     </ListBoxItem>
                     <ListBoxItem>
                         <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[PanelAdvanced]}"
                                  Foreground="{DynamicResource TextPrimaryBrush}"
-                                 FontSize="14"/>
+                                 FontSize="12"/>
                     </ListBoxItem>
                 </ListBox>
             </DockPanel>
@@ -104,7 +128,7 @@
         <!-- Content Area -->
         <Grid Grid.Column="1" Margin="0">
             <!-- Settings Content -->
-            <Grid x:Name="SettingsContent" Margin="32">
+            <Grid x:Name="SettingsContent" Margin="27">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
@@ -115,12 +139,13 @@
                 <TextBlock x:Name="SettingsHeader"
                            Grid.Row="0"
                            Foreground="{DynamicResource TextPrimaryBrush}"
-                           FontSize="24"
+                           FontSize="20"
                            FontWeight="SemiBold"
-                           Margin="0,0,0,24"/>
+                           Margin="0,0,0,17"/>
 
                 <!-- Settings Panel Container -->
                 <ScrollViewer Grid.Row="1"
+                             Margin="0,0,0,17"
                              VerticalScrollBarVisibility="Auto"
                              HorizontalScrollBarVisibility="Disabled">
                     <StackPanel x:Name="SettingsPanels"/>
@@ -130,23 +155,26 @@
                 <StackPanel Grid.Row="2" 
                            Orientation="Horizontal" 
                            HorizontalAlignment="Right"
-                           Margin="0,24,0,0">
+                           Margin="0,17,0,0">
                     <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Reset]}"
                             Style="{DynamicResource ButtonBaseStyle}"
-                            MinWidth="120"
-                            Height="32"
-                            Margin="0,0,12,0"
+                            MinWidth="102"
+                            Height="28"
+                            Padding="8,4"
+                            Margin="0,0,8,0"
                             Click="ResetButton_Click"/>
                     <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Cancel]}"
                             Style="{DynamicResource ButtonBaseStyle}"
-                            MinWidth="120"
-                            Height="32"
-                            Margin="0,0,12,0"
+                            MinWidth="102"
+                            Height="28"
+                            Padding="8,4"
+                            Margin="0,0,8,0"
                             Click="CancelButton_Click"/>
                     <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SaveSettings]}"
                             Style="{DynamicResource ButtonBaseStyle}"
-                            MinWidth="120"
-                            Height="32"
+                            MinWidth="102"
+                            Height="28"
+                            Padding="8,4"
                             Click="SaveButton_Click"
                             Background="{DynamicResource AccentBrush}"/>
                 </StackPanel>
