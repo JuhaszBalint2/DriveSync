@@ -265,33 +265,67 @@
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0"
-                                   Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncHistory]}"
-                                   Style="{DynamicResource SubheadingStyle}"
-                                   Margin="0,0,0,13"/>
+                                 Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncHistory]}"
+                                 Style="{DynamicResource SubheadingStyle}"
+                                 FontSize="20"
+                                 Margin="0,0,0,16"/>
 
                         <ListView Grid.Row="1"
-                                  ItemsSource="{Binding SyncHistory}"
-                                  Background="Transparent"
-                                  BorderThickness="0"
-                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                  ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                                 ItemsSource="{Binding SyncHistory}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="Margin" Value="0,0,0,8"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListViewItem">
+                                                <Border x:Name="Border"
+                                                        Background="Transparent"
+                                                        BorderThickness="0"
+                                                        CornerRadius="4"
+                                                        SnapsToDevicePixels="True">
+                                                    <ContentPresenter Margin="0"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Border" Property="Background" Value="{DynamicResource ListItemHoverBrush}"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="Border" Property="Background" Value="{DynamicResource ListItemSelectedBrush}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
                                     <Button Command="{Binding DataContext.OpenSyncHistoryItemCommand,
                                                              RelativeSource={RelativeSource AncestorType=views:ModernWindowBase}}"
                                             CommandParameter="{Binding}"
                                             Style="{DynamicResource HistoryItemButtonStyle}"
+                                            Height="56"
+                                            Padding="12"
                                             HorizontalContentAlignment="Stretch"
                                             VerticalContentAlignment="Stretch">
-                                        <StackPanel Margin="3">
+                                        <StackPanel>
                                             <TextBlock Text="{Binding Timestamp, StringFormat='yyyy-MM-dd HH:mm:ss'}"
-                                                       Style="{DynamicResource BodyTextStyle}"
-                                                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                     Style="{DynamicResource BodyTextStyle}"
+                                                     FontSize="13"
+                                                     Foreground="{DynamicResource TextSecondaryBrush}"
+                                                     Margin="0,0,0,4"/>
                                             <TextBlock Text="{Binding Description}"
-                                                       Style="{DynamicResource BodyTextStyle}"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       TextWrapping="NoWrap"
-                                                       Margin="0,3,0,0"/>
+                                                     Style="{DynamicResource BodyTextStyle}"
+                                                     FontSize="13"
+                                                     TextTrimming="CharacterEllipsis"
+                                                     TextWrapping="NoWrap"/>
                                         </StackPanel>
                                     </Button>
                                 </DataTemplate>
@@ -314,30 +348,41 @@
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0"
-                           Text="{Binding CurrentSyncOperation}"
-                           Style="{DynamicResource BodyTextStyle}"
-                           Margin="0,0,0,3"/>
+                         Text="{Binding CurrentSyncOperation}"
+                         Style="{DynamicResource BodyTextStyle}"
+                         FontSize="13"
+                         FontWeight="SemiBold"
+                         Margin="0,0,0,4"/>
+
                 <TextBlock Grid.Row="1"
-                           Text="{Binding CurrentFile}"
-                           Style="{DynamicResource BodyTextStyle}"
-                           Margin="0,0,0,7"/>
+                         Text="{Binding CurrentFile}"
+                         Style="{DynamicResource BodyTextStyle}"
+                         FontSize="13"
+                         Margin="0,0,0,8"/>
+
                 <TextBlock Grid.Row="2"
-                           Text="{Binding ProgressPercentage, StringFormat='{}{0} complete'}"
-                           Style="{DynamicResource BodyTextStyle}"
-                           Margin="0,0,0,3"/>
+                         Text="{Binding ProgressPercentage, StringFormat='{}{0} complete'}"
+                         Style="{DynamicResource BodyTextStyle}"
+                         FontSize="13"
+                         Margin="0,0,0,4"/>
+
                 <ProgressBar Grid.Row="3"
-                             Value="{Binding ProgressValue}"
-                             Height="17"
-                             Margin="0,0,0,7"
-                             Minimum="0"
-                             Maximum="100"/>
+                           Value="{Binding ProgressValue}"
+                           Height="12"
+                           Margin="0,0,0,8"
+                           Minimum="0"
+                           Maximum="100"
+                           SnapsToDevicePixels="True"/>
+
                 <StackPanel Grid.Row="4"
-                            Orientation="Horizontal">
+                          Orientation="Horizontal">
                     <TextBlock Text="{Binding CurrentSpeed}"
-                               Style="{DynamicResource BodyTextStyle}"
-                               Margin="0,0,13,0"/>
+                             Style="{DynamicResource BodyTextStyle}"
+                             FontSize="13"
+                             Margin="0,0,16,0"/>
                     <TextBlock Text="{Binding RemainingTime}"
-                               Style="{DynamicResource BodyTextStyle}"/>
+                             Style="{DynamicResource BodyTextStyle}"
+                             FontSize="13"/>
                 </StackPanel>
             </Grid>
 
@@ -346,35 +391,28 @@
                     Background="{DynamicResource SurfaceBrush}"
                     BorderBrush="{DynamicResource BorderDefaultBrush}"
                     BorderThickness="0,1,0,0"
-                    Padding="7">
-                <DockPanel LastChildFill="False">
+                    Height="32"
+                    SnapsToDevicePixels="True">
+                <DockPanel LastChildFill="False" 
+                          Margin="8,0">
                     <Ellipse Width="8"
                              Height="8"
                              Fill="{Binding StatusIndicatorBrush}"
-                             Margin="0,0,7,0"/>
+                             Margin="0,0,8,0"
+                             VerticalAlignment="Center"
+                             SnapsToDevicePixels="True"/>
+
                     <TextBlock Text="{Binding StatusMessage}"
-                               Style="{DynamicResource BodyTextStyle}"
-                               VerticalAlignment="Center"/>
-                </DockPanel>
-            </Border>
-            <Border Grid.Row="2"
-                    Background="{DynamicResource SurfaceBrush}"
-                    BorderBrush="{DynamicResource BorderDefaultBrush}"
-                    BorderThickness="0,1,0,0"
-                    Padding="7">
-                <DockPanel LastChildFill="False">
-                    <Ellipse Width="8"
-                             Height="8"
-                             Fill="{Binding StatusIndicatorBrush}"
-                             Margin="0,0,7,0"/>
-                    <TextBlock Text="{Binding StatusMessage}"
-                               Style="{DynamicResource BodyTextStyle}"
-                               VerticalAlignment="Center"/>
+                             Style="{DynamicResource BodyTextStyle}"
+                             FontSize="13"
+                             VerticalAlignment="Center"/>
+
                     <TextBlock Text="{Binding UpdateMessage}"
-                               Style="{DynamicResource BodyTextStyle}"
-                               VerticalAlignment="Center"
-                               Margin="13,0,0,0"
-                               DockPanel.Dock="Right"/>
+                             Style="{DynamicResource BodyTextStyle}"
+                             FontSize="13"
+                             VerticalAlignment="Center"
+                             Margin="16,0,0,0"
+                             DockPanel.Dock="Right"/>
                 </DockPanel>
             </Border>
         </Grid>

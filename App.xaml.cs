@@ -75,8 +75,10 @@ namespace DriveSync.WPF
                 builder.SetMinimumLevel(LogLevel.Debug);
             });
 
-            services.AddSingleton<IRcloneVersionService, RcloneVersionService>();
+            // Add RcloneManager as a singleton
+            services.AddSingleton<RcloneManager>();
             services.AddSingleton<IRcloneService, RcloneService>();
+            services.AddSingleton<IRcloneVersionService, RcloneVersionService>();
             services.AddSingleton<MainViewModel>();
             services.AddSingleton<MainWindow>();
         }
