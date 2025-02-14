@@ -44,8 +44,18 @@ namespace DriveSync.Infrastructure.Services
         {
             try
             {
+                // First check if we already have the latest version installed
                 var (isUpdateAvailable, latestVersion, currentVersion) =
                     await _versionService.CheckRcloneVersion();
+
+                string existingPath = GetExistingRclonePath(latestVersion);
+                if (existingPath != null)
+                {
+                    // We already have the latest version, use it
+                    _logger.LogInformation($"Using existing latest rclone v{latestVersion}");
+                    CurrentRclonePath = existingPath;
+                    return;
+                }
 
                 if (isUpdateAvailable)
                 {
@@ -69,6 +79,7 @@ namespace DriveSync.Infrastructure.Services
                 }
                 else
                 {
+                    // If no update is available, use the current version
                     CurrentRclonePath = GetExistingRclonePath(currentVersion) ?? "rclone";
                 }
             }

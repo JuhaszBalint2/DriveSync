@@ -10,6 +10,7 @@ using DriveSync.WPF.Views;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 
 namespace DriveSync.WPF
 {
@@ -17,7 +18,6 @@ namespace DriveSync.WPF
     {
         public static IServiceProvider ServiceProvider { get; private set; }
 
-        // DPI-related Win32 API imports
         [DllImport("user32.dll", SetLastError = true)]
         private static extern bool SetProcessDPIAware();
 
@@ -33,23 +33,19 @@ namespace DriveSync.WPF
 
         public App()
         {
-            // Enable proper DPI scaling
             if (Environment.OSVersion.Version >= new Version(6, 3, 0))
             {
-                // Windows 8.1 and above - Per Monitor DPI aware
                 try
                 {
                     SetProcessDpiAwareness(PROCESS_DPI_AWARENESS.Process_Per_Monitor_DPI_Aware);
                 }
                 catch (Exception)
                 {
-                    // Fallback to older DPI awareness method
                     SetProcessDPIAware();
                 }
             }
             else if (Environment.OSVersion.Version >= new Version(6, 0))
             {
-                // Windows Vista and above - System DPI aware
                 SetProcessDPIAware();
             }
 
@@ -58,7 +54,6 @@ namespace DriveSync.WPF
             ConfigureServices(serviceCollection);
             ServiceProvider = serviceCollection.BuildServiceProvider();
 
-            // Only subscribe to system theme changes if using system theme
             var settings = AppSettings.Load();
             if (settings.UseSystemTheme)
             {
@@ -75,7 +70,6 @@ namespace DriveSync.WPF
                 builder.SetMinimumLevel(LogLevel.Debug);
             });
 
-            // Add RcloneManager as a singleton
             services.AddSingleton<RcloneManager>();
             services.AddSingleton<IRcloneService, RcloneService>();
             services.AddSingleton<IRcloneVersionService, RcloneVersionService>();
@@ -87,7 +81,6 @@ namespace DriveSync.WPF
         {
             base.OnStartup(e);
 
-            // Enable DPI change awareness for WPF
             if (Environment.OSVersion.Version >= new Version(10, 0, 15063))
             {
                 System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.Default;
@@ -96,12 +89,20 @@ namespace DriveSync.WPF
             var settings = AppSettings.Load();
             var mainViewModel = ServiceProvider.GetService<MainViewModel>();
             var logger = ServiceProvider.GetService<ILoggerFactory>().CreateLogger<App>();
+            var rcloneManager = ServiceProvider.GetService<RcloneManager>();
 
             try
             {
-                // Rest of your startup code remains the same
+                // Initialize RcloneManager
+                await rcloneManager.InitializeAsync();
+
                 if (mainViewModel != null)
                 {
+                    // Get version from the current rclone path
+                    string version = ExtractVersionFromPath(rcloneManager.CurrentRclonePath);
+                    mainViewModel.UpdateMessage = $"rclone v{version}";
+
+                    // Apply theme settings
                     string themeToApply = settings.UseSystemTheme ?
                         AppSettings.DetectSystemTheme() :
                         settings.Theme;
@@ -110,64 +111,7 @@ namespace DriveSync.WPF
                     mainViewModel.ApplyTheme(themeToApply);
                 }
 
-                var versionService = ServiceProvider.GetService<IRcloneVersionService>();
-                var (isUpdateAvailable, latestVersion, currentVersion) = await versionService.CheckRcloneVersion();
-
-                if (mainViewModel != null)
-                {
-                    if (isUpdateAvailable)
-                    {
-                        mainViewModel.UpdateMessage = $"rclone v{currentVersion} → v{latestVersion} available";
-                        var result = MessageBox.Show(
-                            $"A new version of rclone is available.\n\n" +
-                            $"Current version: {currentVersion}\n" +
-                            $"Latest version: {latestVersion}\n\n" +
-                            "Would you like to download the latest version?",
-                            "Update Available",
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Information
-                        );
-
-                        if (result == MessageBoxResult.Yes)
-                        {
-                            string downloadPath = Path.Combine(
-                                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                                "DriveSync",
-                                $"rclone-v{latestVersion}-windows-amd64.zip"
-                            );
-
-                            Directory.CreateDirectory(Path.GetDirectoryName(downloadPath));
-
-                            bool downloadSuccess = await versionService.DownloadLatestRclone(downloadPath);
-
-                            if (downloadSuccess)
-                            {
-                                MessageBox.Show(
-                                    $"Rclone {latestVersion} downloaded to {downloadPath}. " +
-                                    "Please extract and replace your existing rclone executable.",
-                                    "Download Complete",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Information
-                                );
-                            }
-                            else
-                            {
-                                MessageBox.Show(
-                                    "Failed to download the latest rclone version.",
-                                    "Download Error",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Error
-                                );
-                            }
-                        }
-                    }
-                    else
-                    {
-                        mainViewModel.UpdateMessage = $"rclone v{currentVersion}";
-                    }
-                }
-
-                // Show the main window after theme is applied
+                // Show the main window
                 var mainWindow = ServiceProvider.GetService<MainWindow>();
                 mainWindow?.Show();
             }
@@ -179,9 +123,16 @@ namespace DriveSync.WPF
             }
         }
 
+        private string ExtractVersionFromPath(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return "unknown";
+
+            var match = Regex.Match(path, @"v(\d+\.\d+\.\d+)");
+            return match.Success ? match.Groups[1].Value : "unknown";
+        }
+
         private void SystemEvents_UserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
         {
-            // Check if the change is related to color settings and we're using system theme
             if (e.Category == UserPreferenceCategory.Color)
             {
                 var settings = AppSettings.Load();

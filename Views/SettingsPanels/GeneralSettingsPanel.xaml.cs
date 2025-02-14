@@ -4,26 +4,38 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
+using DriveSync.Infrastructure.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DriveSync.WPF.Views.SettingsPanels
 {
     public partial class GeneralSettingsPanel : UserControl, ISettingsPanel
     {
+        private readonly RcloneManager _rcloneManager;
+
         public GeneralSettingsPanel()
         {
             InitializeComponent();
+            _rcloneManager = App.ServiceProvider.GetService<RcloneManager>();
+
+            // Subscribe to RcloneManager path changes
+            if (_rcloneManager != null)
+            {
+                _rcloneManager.RclonePathChanged += (sender, path) =>
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        RclonePathTextBox.Text = path;
+                    });
+                };
+            }
         }
 
         public void LoadSettings(AppSettings settings)
         {
-            // If no path is set, attempt to auto-detect
-            if (string.IsNullOrWhiteSpace(settings.RcloneExecutablePath) ||
-                !File.Exists(settings.RcloneExecutablePath))
-            {
-                settings.RcloneExecutablePath = FindRclonePath();
-            }
+            // Use the path from RcloneManager if available, otherwise fall back to settings
+            RclonePathTextBox.Text = _rcloneManager?.CurrentRclonePath ?? settings.RcloneExecutablePath;
 
-            RclonePathTextBox.Text = settings.RcloneExecutablePath;
             DefaultSyncModeCombo.SelectedIndex = settings.DefaultSyncMode switch
             {
                 "Mirror" => 0,
@@ -31,45 +43,6 @@ namespace DriveSync.WPF.Views.SettingsPanels
                 "Move" => 2,
                 _ => 0
             };
-        }
-
-        private string FindRclonePath()
-        {
-            // Possible locations to search for rclone.exe
-            string[] searchLocations = new[]
-            {
-                // Current application directory
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "rclone.exe"),
-                
-                // Common installation paths
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "rclone", "rclone.exe"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "rclone", "rclone.exe"),
-                
-                // Local app data
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "rclone", "rclone.exe"),
-                
-                // System PATH
-                FindInSystemPath("rclone.exe")
-            };
-
-            foreach (var path in searchLocations)
-            {
-                if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
-                {
-                    return path;
-                }
-            }
-
-            // Fallback to default if no path found
-            return "rclone";
-        }
-
-        private string FindInSystemPath(string executable)
-        {
-            return Environment.GetEnvironmentVariable("PATH")
-                .Split(Path.PathSeparator)
-                .Select(p => Path.Combine(p, executable))
-                .FirstOrDefault(File.Exists);
         }
 
         public void SaveSettings(AppSettings settings)
