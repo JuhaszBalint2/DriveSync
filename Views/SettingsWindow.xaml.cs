@@ -5,6 +5,9 @@ using DriveSync.WPF.Views.SettingsPanels;
 using Microsoft.Extensions.Logging;
 using DriveSync.WPF.Localization;
 using System.Linq;
+using DriveSync.Infrastructure.Services;
+using DriveSync.WPF.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DriveSync.WPF.Views
 {
@@ -175,6 +178,22 @@ namespace DriveSync.WPF.Views
 
                 // Apply theme changes
                 ApplyCurrentTheme();
+
+                // Update MainViewModel's selected sync mode
+                var mainViewModel = App.ServiceProvider.GetService<MainViewModel>();
+                if (mainViewModel != null)
+                {
+                    mainViewModel.SelectedSyncMode = mainViewModel.AvailableSyncModes
+                        .FirstOrDefault(x =>
+                            x.DisplayName == _settings.DefaultSyncMode ||
+                            (x.Value == SyncType.Mirror && _settings.DefaultSyncMode == "Mirror Sync") ||
+                            (x.Value == SyncType.Backup && _settings.DefaultSyncMode == "Backup (Copy)") ||
+                            (x.Value == SyncType.Move && _settings.DefaultSyncMode == "Move Files") ||
+                            (x.Value == SyncType.Mirror && _settings.DefaultSyncMode == "Tükrözéses szinkronizálás") ||
+                            (x.Value == SyncType.Backup && _settings.DefaultSyncMode == "Biztonsági mentés (Másolás)") ||
+                            (x.Value == SyncType.Move && _settings.DefaultSyncMode == "Fájlok áthelyezése")
+                        ) ?? mainViewModel.AvailableSyncModes.First();
+                }
 
                 _logger.LogInformation("Settings saved successfully");
 

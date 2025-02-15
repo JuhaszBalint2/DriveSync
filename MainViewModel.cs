@@ -164,11 +164,11 @@ namespace DriveSync.WPF.ViewModels
             _loggerFactory = loggerFactory;
 
             AvailableSyncModes = new ObservableCollection<SyncTypeOption>
-            {
-                new SyncTypeOption { DisplayName = LocalizationManager.Instance["SyncModeOption1"], Value = SyncType.Mirror },
-                new SyncTypeOption { DisplayName = LocalizationManager.Instance["SyncModeOption2"], Value = SyncType.Backup },
-                new SyncTypeOption { DisplayName = LocalizationManager.Instance["SyncModeOption3"], Value = SyncType.Move }
-            };
+    {
+        new SyncTypeOption { DisplayName = LocalizationManager.Instance["SyncModeOption1"], Value = SyncType.Mirror },
+        new SyncTypeOption { DisplayName = LocalizationManager.Instance["SyncModeOption2"], Value = SyncType.Backup },
+        new SyncTypeOption { DisplayName = LocalizationManager.Instance["SyncModeOption3"], Value = SyncType.Move }
+    };
 
             ButtonText = LocalizationManager.Instance["SyncNow"];
 
@@ -182,10 +182,20 @@ namespace DriveSync.WPF.ViewModels
                         LocalizationManager.Instance["SyncNow"];
                 }
             };
+
             var settings = AppSettings.Load();
+
+            // Determine the correct sync mode based on the saved DefaultSyncMode
             SelectedSyncMode = AvailableSyncModes
-                .FirstOrDefault(x => x.DisplayName.Contains(settings.DefaultSyncMode, StringComparison.OrdinalIgnoreCase))
-                ?? AvailableSyncModes.First();
+                .FirstOrDefault(x =>
+                    x.DisplayName == settings.DefaultSyncMode ||
+                    (x.Value == SyncType.Mirror && settings.DefaultSyncMode == "Mirror Sync") ||
+                    (x.Value == SyncType.Backup && settings.DefaultSyncMode == "Backup (Copy)") ||
+                    (x.Value == SyncType.Move && settings.DefaultSyncMode == "Move Files") ||
+                    (x.Value == SyncType.Mirror && settings.DefaultSyncMode == "Tükrözéses szinkronizálás") ||
+                    (x.Value == SyncType.Backup && settings.DefaultSyncMode == "Biztonsági mentés (Másolás)") ||
+                    (x.Value == SyncType.Move && settings.DefaultSyncMode == "Fájlok áthelyezése")
+                ) ?? AvailableSyncModes.First();
 
             // Detect system theme and update settings if needed
             string detectedTheme = AppSettings.DetectSystemTheme();

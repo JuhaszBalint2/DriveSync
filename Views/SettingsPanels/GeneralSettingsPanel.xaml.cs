@@ -36,11 +36,15 @@ namespace DriveSync.WPF.Views.SettingsPanels
             // Use the path from RcloneManager if available, otherwise fall back to settings
             RclonePathTextBox.Text = _rcloneManager?.CurrentRclonePath ?? settings.RcloneExecutablePath;
 
+            // Map the saved DefaultSyncMode to the correct ComboBox index
             DefaultSyncModeCombo.SelectedIndex = settings.DefaultSyncMode switch
             {
-                "Mirror" => 0,
-                "Backup" => 1,
-                "Move" => 2,
+                "Mirror Sync" => 0,
+                "Tükrözéses szinkronizálás" => 0,
+                "Backup (Copy)" => 1,
+                "Biztonsági mentés (Másolás)" => 1,
+                "Move Files" => 2,
+                "Fájlok áthelyezése" => 2,
                 _ => 0
             };
         }
@@ -48,7 +52,18 @@ namespace DriveSync.WPF.Views.SettingsPanels
         public void SaveSettings(AppSettings settings)
         {
             settings.RcloneExecutablePath = RclonePathTextBox.Text;
-            settings.DefaultSyncMode = ((ComboBoxItem)DefaultSyncModeCombo.SelectedItem).Content.ToString();
+
+            // Save the non-localized version of the sync mode
+            settings.DefaultSyncMode = ((ComboBoxItem)DefaultSyncModeCombo.SelectedItem).Content.ToString() switch
+            {
+                "Tükrözéses szinkronizálás" => "Mirror Sync",
+                "Biztonsági mentés (Másolás)" => "Backup (Copy)",
+                "Fájlok áthelyezése" => "Move Files",
+                "Mirror Sync" => "Mirror Sync",
+                "Backup (Copy)" => "Backup (Copy)",
+                "Move Files" => "Move Files",
+                _ => "Mirror Sync"
+            };
         }
 
         private void BrowseRclone_Click(object sender, RoutedEventArgs e)
