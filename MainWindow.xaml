@@ -168,6 +168,7 @@
                                                  VerticalAlignment="Center"
                                                  Margin="8,0"
                                                  FontSize="13"
+                                                   TextElement.Foreground="{DynamicResource TextPrimaryBrush}"
                                                  TextWrapping="NoWrap"
                                                  TextTrimming="CharacterEllipsis"/>
                                     </Border>
@@ -220,6 +221,7 @@
                                                  VerticalAlignment="Center"
                                                  Margin="8,0"
                                                  FontSize="13"
+                                                    TextElement.Foreground="{DynamicResource TextPrimaryBrush}"
                                                  TextWrapping="NoWrap"
                                                  TextTrimming="CharacterEllipsis"/>
                                     </Border>
