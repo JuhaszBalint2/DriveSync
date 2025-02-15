@@ -51,23 +51,24 @@
                         Orientation="Horizontal" 
                         HorizontalAlignment="Right"
                         Margin="17,12">
+                <!-- Sync Button -->
                 <Button Content="{Binding ButtonText}"
-                        Command="{Binding SyncCommand}"
-                        Style="{DynamicResource ButtonBaseStyle}"
-                        IsEnabled="{Binding IsValid}"
-                        MinWidth="102"
-                        Height="32"
-                        Padding="16,4"
-                        Margin="0,0,8,0"/>
-
+        Command="{Binding SyncCommand}"
+        Style="{DynamicResource ButtonBaseStyle}"
+        IsEnabled="{Binding IsValid}"
+        MinWidth="102"
+        Height="32"
+        Padding="10,6"
+        Margin="0,0,8,0"/>
+                <!-- Schedule Button -->
                 <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Schedule]}"
-                        Command="{Binding ScheduleSyncCommand}"
-                        Style="{DynamicResource ButtonBaseStyle}"
-                        MinWidth="102"
-                        Height="32"
-                        Padding="16,4"
-                        Margin="0,0,8,0"/>
-
+        Command="{Binding ScheduleSyncCommand}"
+        Style="{DynamicResource ButtonBaseStyle}"
+        MinWidth="102"
+        Height="32"
+        Padding="10,6"
+        Margin="0,0,8,0"/>
+                
                 <ComboBox x:Name="LanguageComboBox"
                          MinWidth="85"
                          Height="32"
@@ -82,12 +83,13 @@
                                  IsSelected="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=CurrentLanguage, Converter={StaticResource HungarianSelectedConverter}}"/>
                 </ComboBox>
 
+                <!-- Settings Button -->
                 <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Settings]}"
-                        Command="{Binding OpenSettingsCommand}"
-                        Style="{DynamicResource ButtonBaseStyle}"
-                        MinWidth="102"
-                        Height="32"
-                        Padding="16,4"/>
+        Command="{Binding OpenSettingsCommand}"
+        Style="{DynamicResource ButtonBaseStyle}"
+        MinWidth="102"
+        Height="32"
+        Padding="10,6"/>
             </StackPanel>
         </Grid>
 
@@ -147,14 +149,14 @@
                                     </Grid.ColumnDefinitions>
 
                                     <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Browse]}"
-                                            Command="{Binding BrowseSourceCommand}"
-                                            Style="{DynamicResource ButtonBaseStyle}"
-                                            MinWidth="102"
-                                            Height="32"
-                                            Padding="16,4"
-                                            Grid.Column="0"
-                                            Margin="0,0,8,0"/>
-
+        Command="{Binding BrowseSourceCommand}"
+        Style="{DynamicResource ButtonBaseStyle}"
+        MinWidth="102"
+        Height="32"
+        Padding="10,6"
+        Grid.Column="0"
+        Margin="0,0,8,0"/>
+                                    
                                     <Border Grid.Column="1"
                                             Background="{DynamicResource SurfaceBrush}"
                                             BorderBrush="{DynamicResource BorderDefaultBrush}"
@@ -200,14 +202,13 @@
                                     </Grid.ColumnDefinitions>
 
                                     <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Browse]}"
-                                            Command="{Binding BrowseTargetCommand}"
-                                            Style="{DynamicResource ButtonBaseStyle}"
-                                            MinWidth="102"
-                                            Height="32"
-                                            Padding="16,4"
-                                            Grid.Column="0"
-                                            Margin="0,0,8,0"/>
-
+        Command="{Binding BrowseTargetCommand}"
+        Style="{DynamicResource ButtonBaseStyle}"
+        MinWidth="102"
+        Height="32"
+        Padding="10,6"
+        Grid.Column="0"
+        Margin="0,0,8,0"/>
                                     <Border Grid.Column="1"
                                             Background="{DynamicResource SurfaceBrush}"
                                             BorderBrush="{DynamicResource BorderDefaultBrush}"

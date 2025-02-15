@@ -8,7 +8,7 @@ using System.Diagnostics;
 
 namespace DriveSync.WPF.Views
 {
-    public partial class LogViewerWindow : Window
+    public partial class LogViewerWindow : ModernWindowBase
     {
         private readonly string _rawLog;
         private readonly DateTime _timestamp;

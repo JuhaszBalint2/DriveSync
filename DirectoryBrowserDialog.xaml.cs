@@ -4,7 +4,7 @@ using DriveSync.WPF.ViewModels;
 
 namespace DriveSync.WPF.Views
 {
-    public partial class DirectoryBrowserDialog : Window
+    public partial class DirectoryBrowserDialog : ModernWindowBase
     {
         private readonly DirectoryBrowserViewModel _viewModel;
 
