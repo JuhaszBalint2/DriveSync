@@ -146,29 +146,29 @@
                     <!-- SYNC MODE -->
                     <StackPanel Grid.Row="1" Margin="0,13,0,0">
                         <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncMode]}" 
-                                   Style="{DynamicResource BodyTextStyle}"
-                                   FontSize="12"/>
+                   Style="{DynamicResource BodyTextStyle}"
+                   FontSize="12"/>
                         <ComboBox ItemsSource="{Binding AvailableSyncModes}"
-                                  SelectedItem="{Binding SelectedSyncMode}"
-                                  Height="32" 
-                                  Width="170"
-                                  VerticalContentAlignment="Center"
-                                  Margin="0,3,0,0"
-                                  HorizontalAlignment="Left">
+                  SelectedItem="{Binding SelectedSyncMode}"
+                  Height="32" 
+                  Width="190"
+                  VerticalContentAlignment="Center"
+                  Margin="0,3,0,0"
+                  HorizontalAlignment="Left">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Value, Converter={StaticResource LocalizationConverter}}"
-                                               FontSize="12"/>
+                               FontSize="12"/>
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                     </StackPanel>
-
+                    
                     <!-- SCHEDULE OPTIONS -->
                     <Grid Grid.Row="2" Margin="0,13,0,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="102"/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="27"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="102"/>

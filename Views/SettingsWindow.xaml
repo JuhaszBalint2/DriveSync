@@ -9,8 +9,12 @@
     Height="595"
     Width="850"
     WindowStartupLocation="CenterOwner"
-    Background="{DynamicResource BackgroundBrush}">
-
+    Background="{DynamicResource BackgroundBrush}"
+    UseLayoutRounding="True"
+    SnapsToDevicePixels="True"
+    TextOptions.TextFormattingMode="Display"
+    TextOptions.TextRenderingMode="ClearType">
+    
     <views:ModernWindowBase.Resources>
         <Style x:Key="SettingsComboBoxStyle" TargetType="ComboBox">
             <Setter Property="Height" Value="24"/>
