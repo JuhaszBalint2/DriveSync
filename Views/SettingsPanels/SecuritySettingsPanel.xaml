@@ -1,7 +1,11 @@
 ﻿<UserControl x:Class="DriveSync.WPF.Views.SettingsPanels.SecuritySettingsPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:loc="clr-namespace:DriveSync.WPF.Localization">
+             xmlns:loc="clr-namespace:DriveSync.WPF.Localization"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True"
+             TextOptions.TextFormattingMode="Display"
+             TextOptions.TextRenderingMode="ClearType">
     <StackPanel>
         <!-- Authentication Section -->
         <Border Background="{DynamicResource SurfaceBrush}"

@@ -1,7 +1,11 @@
 ﻿<UserControl x:Class="DriveSync.WPF.Views.SettingsPanels.GeneralSettingsPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:loc="clr-namespace:DriveSync.WPF.Localization">
+             xmlns:loc="clr-namespace:DriveSync.WPF.Localization"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True"
+             TextOptions.TextFormattingMode="Display"
+             TextOptions.TextRenderingMode="ClearType">
     <StackPanel>
         <!-- Rclone Configuration Section -->
         <Border Background="{DynamicResource SurfaceBrush}"
@@ -29,7 +33,7 @@
 
                     <TextBox x:Name="RclonePathTextBox"
                              Height="36"
-                             VerticalContentAlignment="Center"/>
+                             VerticalContentAlignment="Center" Width="Auto"/>
 
                     <Button Grid.Column="1"
                             Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BrowseRclone]}"
