@@ -70,9 +70,14 @@ namespace DriveSync.WPF
                 builder.SetMinimumLevel(LogLevel.Debug);
             });
 
-            services.AddSingleton<RcloneManager>();
-            services.AddSingleton<IRcloneService, RcloneService>();
+            // Register RcloneVersionService first
             services.AddSingleton<IRcloneVersionService, RcloneVersionService>();
+
+            // Then register RcloneManager that depends on it
+            services.AddSingleton<RcloneManager>();
+
+            // Register other services
+            services.AddSingleton<IRcloneService, RcloneService>();
             services.AddSingleton<MainViewModel>();
             services.AddSingleton<MainWindow>();
         }
@@ -93,6 +98,41 @@ namespace DriveSync.WPF
 
             try
             {
+                // Initialize RcloneManager with progress tracking
+                rcloneManager.DownloadProgress += (sender, progress) =>
+                {
+                    if (mainViewModel != null)
+                    {
+                        Dispatcher.Invoke(() =>
+                        {
+                            mainViewModel.StatusMessage = $"Downloading rclone update: {progress:F1}%";
+                        });
+                    }
+                };
+
+                rcloneManager.InitializationError += (sender, message) =>
+                {
+                    if (mainViewModel != null)
+                    {
+                        Dispatcher.Invoke(() =>
+                        {
+                            mainViewModel.StatusMessage = $"Rclone initialization error: {message}";
+                        });
+                    }
+                };
+
+                rcloneManager.RclonePathChanged += (sender, path) =>
+                {
+                    if (mainViewModel != null)
+                    {
+                        Dispatcher.Invoke(() =>
+                        {
+                            string version = ExtractVersionFromPath(path);
+                            mainViewModel.UpdateMessage = $"rclone v{version}";
+                        });
+                    }
+                };
+
                 // Initialize RcloneManager
                 await rcloneManager.InitializeAsync();
 

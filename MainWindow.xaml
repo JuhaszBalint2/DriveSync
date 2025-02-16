@@ -53,22 +53,22 @@
                         Margin="17,12">
                 <!-- Sync Button -->
                 <Button Content="{Binding ButtonText}"
-        Command="{Binding SyncCommand}"
-        Style="{DynamicResource ButtonBaseStyle}"
-        IsEnabled="{Binding IsValid}"
-        MinWidth="102"
-        Height="32"
-        Padding="10,6"
-        Margin="0,0,8,0"/>
+                        Command="{Binding SyncCommand}"
+                        Style="{DynamicResource ButtonBaseStyle}"
+                        IsEnabled="{Binding IsValid}"
+                        MinWidth="102"
+                        Height="32"
+                        Padding="10,6"
+                        Margin="0,0,8,0"/>
                 <!-- Schedule Button -->
                 <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Schedule]}"
-        Command="{Binding ScheduleSyncCommand}"
-        Style="{DynamicResource ButtonBaseStyle}"
-        MinWidth="102"
-        Height="32"
-        Padding="10,6"
-        Margin="0,0,8,0"/>
-                
+                        Command="{Binding ScheduleSyncCommand}"
+                        Style="{DynamicResource ButtonBaseStyle}"
+                        MinWidth="102"
+                        Height="32"
+                        Padding="10,6"
+                        Margin="0,0,8,0"/>
+
                 <ComboBox x:Name="LanguageComboBox"
                          MinWidth="85"
                          Height="32"
@@ -85,11 +85,11 @@
 
                 <!-- Settings Button -->
                 <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Settings]}"
-        Command="{Binding OpenSettingsCommand}"
-        Style="{DynamicResource ButtonBaseStyle}"
-        MinWidth="102"
-        Height="32"
-        Padding="10,6"/>
+                        Command="{Binding OpenSettingsCommand}"
+                        Style="{DynamicResource ButtonBaseStyle}"
+                        MinWidth="102"
+                        Height="32"
+                        Padding="10,6"/>
             </StackPanel>
         </Grid>
 
@@ -149,14 +149,14 @@
                                     </Grid.ColumnDefinitions>
 
                                     <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Browse]}"
-        Command="{Binding BrowseSourceCommand}"
-        Style="{DynamicResource ButtonBaseStyle}"
-        MinWidth="102"
-        Height="32"
-        Padding="10,6"
-        Grid.Column="0"
-        Margin="0,0,8,0"/>
-                                    
+                                            Command="{Binding BrowseSourceCommand}"
+                                            Style="{DynamicResource ButtonBaseStyle}"
+                                            MinWidth="102"
+                                            Height="32"
+                                            Padding="10,6"
+                                            Grid.Column="0"
+                                            Margin="0,0,8,0"/>
+
                                     <Border Grid.Column="1"
                                             Background="{DynamicResource SurfaceBrush}"
                                             BorderBrush="{DynamicResource BorderDefaultBrush}"
@@ -168,7 +168,7 @@
                                                  VerticalAlignment="Center"
                                                  Margin="8,0"
                                                  FontSize="13"
-                                                   TextElement.Foreground="{DynamicResource TextPrimaryBrush}"
+                                                 Foreground="{DynamicResource TextPrimaryBrush}"
                                                  TextWrapping="NoWrap"
                                                  TextTrimming="CharacterEllipsis"/>
                                     </Border>
@@ -203,25 +203,27 @@
                                     </Grid.ColumnDefinitions>
 
                                     <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Browse]}"
-        Command="{Binding BrowseTargetCommand}"
-        Style="{DynamicResource ButtonBaseStyle}"
-        MinWidth="102"
-        Height="32"
-        Padding="10,6"
-        Grid.Column="0"
-        Margin="0,0,8,0"/>
+                                            Command="{Binding BrowseTargetCommand}"
+                                            Style="{DynamicResource ButtonBaseStyle}"
+                                            MinWidth="102"
+                                            Height="32"
+                                            Padding="10,6"
+                                            Grid.Column="0"
+                                            Margin="0,0,8,0"/>
                                     <Border Grid.Column="1"
                                             Background="{DynamicResource SurfaceBrush}"
                                             BorderBrush="{DynamicResource BorderDefaultBrush}"
                                             BorderThickness="1"
                                             Height="32"
-                                            CornerRadius="4">
+                                            CornerRadius="4"
+                                            Padding="7,0"
+                                            VerticalAlignment="Center">
                                         <TextBlock Text="{Binding TargetPath}"
                                                  ToolTip="{Binding TargetPath}"
                                                  VerticalAlignment="Center"
                                                  Margin="8,0"
                                                  FontSize="13"
-                                                    TextElement.Foreground="{DynamicResource TextPrimaryBrush}"
+                                                 Foreground="{DynamicResource TextPrimaryBrush}"
                                                  TextWrapping="NoWrap"
                                                  TextTrimming="CharacterEllipsis"/>
                                     </Border>
@@ -254,13 +256,14 @@
                         </DockPanel>
                     </StackPanel>
                 </Border>
+
                 <!-- Sync History Panel -->
                 <Border Grid.Column="1"
-                        Background="{DynamicResource SurfaceBrush}"
-                        CornerRadius="7"
-                        Padding="17"
-                        BorderBrush="{DynamicResource BorderDefaultBrush}"
-                        BorderThickness="1">
+        Background="{DynamicResource SurfaceBrush}"
+        CornerRadius="7"
+        Padding="17"
+        BorderBrush="{DynamicResource BorderDefaultBrush}"
+        BorderThickness="1">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -268,32 +271,36 @@
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0"
-                                 Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncHistory]}"
-                                 Style="{DynamicResource SubheadingStyle}"
-                                 FontSize="20"
-                                 Margin="0,0,0,16"/>
+                 Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncHistory]}"
+                 Style="{DynamicResource SubheadingStyle}"
+                 FontSize="20"
+                 Margin="0,0,0,16"/>
 
                         <ListView Grid.Row="1"
-                                 ItemsSource="{Binding SyncHistory}"
-                                 Background="Transparent"
-                                 BorderThickness="0"
-                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                 ScrollViewer.HorizontalScrollBarVisibility="Auto">
+                 ItemsSource="{Binding SyncHistory}"
+                 Background="Transparent"
+                 BorderThickness="0"
+                 Margin="0,0,0,0"
+                 Padding="0"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto">
                             <ListView.ItemContainerStyle>
                                 <Style TargetType="ListViewItem">
-                                    <Setter Property="Padding" Value="0"/>
                                     <Setter Property="Margin" Value="0,0,0,8"/>
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Padding" Value="0"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                                     <Setter Property="Template">
                                         <Setter.Value>
                                             <ControlTemplate TargetType="ListViewItem">
                                                 <Border x:Name="Border"
-                                                        Background="Transparent"
-                                                        BorderThickness="0"
-                                                        CornerRadius="4"
-                                                        SnapsToDevicePixels="True">
-                                                    <ContentPresenter Margin="0"/>
+                                        Background="{DynamicResource SurfaceBrush}"
+                                        BorderBrush="{DynamicResource BorderDefaultBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        Margin="{TemplateBinding Margin}">
+                                                    <ContentPresenter Margin="0"
+                                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                                                 </Border>
                                                 <ControlTemplate.Triggers>
                                                     <Trigger Property="IsMouseOver" Value="True">
@@ -310,26 +317,29 @@
                             </ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate>
-                                    <Button Command="{Binding DataContext.OpenSyncHistoryItemCommand,
-                                                             RelativeSource={RelativeSource AncestorType=views:ModernWindowBase}}"
-                                            CommandParameter="{Binding}"
-                                            Style="{DynamicResource HistoryItemButtonStyle}"
-                                            Height="56"
-                                            Padding="12"
-                                            HorizontalContentAlignment="Stretch"
-                                            VerticalContentAlignment="Stretch">
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding Timestamp, StringFormat='yyyy-MM-dd HH:mm:ss'}"
-                                                     Style="{DynamicResource BodyTextStyle}"
-                                                     FontSize="13"
-                                                     Foreground="{DynamicResource TextSecondaryBrush}"
-                                                     Margin="0,0,0,4"/>
-                                            <TextBlock Text="{Binding Description}"
-                                                     Style="{DynamicResource BodyTextStyle}"
-                                                     FontSize="13"
-                                                     TextTrimming="CharacterEllipsis"
-                                                     TextWrapping="NoWrap"/>
-                                        </StackPanel>
+                                    <Button Style="{StaticResource HistoryItemButtonStyle}" 
+                Command="{Binding DataContext.OpenSyncHistoryItemCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
+                CommandParameter="{Binding}">
+                                        <Grid Margin="12" Background="Transparent">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <TextBlock Grid.Row="0" 
+                           Text="{Binding Timestamp, StringFormat='yyyy-MM-dd HH:mm:ss'}"
+                           Style="{DynamicResource BodyTextStyle}" 
+                           FontSize="13"
+                           Foreground="{DynamicResource TextSecondaryBrush}" 
+                           Margin="0,0,0,4"/>
+
+                                            <TextBlock Grid.Row="1"
+                           Text="{Binding Description}" 
+                           Style="{DynamicResource BodyTextStyle}"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextPrimaryBrush}" 
+                           TextWrapping="Wrap"/>
+                                        </Grid>
                                     </Button>
                                 </DataTemplate>
                             </ListView.ItemTemplate>

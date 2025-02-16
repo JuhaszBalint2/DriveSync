@@ -3,6 +3,9 @@ using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using System.Linq;
+using System.Collections.Generic;
+using System.Threading;
 
 namespace DriveSync.Infrastructure.Services
 {
@@ -12,8 +15,13 @@ namespace DriveSync.Infrastructure.Services
         private readonly IRcloneVersionService _versionService;
         private readonly string _baseDirectory;
         private string _currentRclonePath;
+        private const int VERSION_HISTORY_LIMIT = 2;
+        private SemaphoreSlim _initializationLock = new SemaphoreSlim(1, 1);
+        private bool _isInitialized = false;
 
         public event EventHandler<string> RclonePathChanged;
+        public event EventHandler<double> DownloadProgress;
+        public event EventHandler<string> InitializationError;
 
         public string CurrentRclonePath
         {
@@ -37,39 +45,50 @@ namespace DriveSync.Infrastructure.Services
                 "DriveSync",
                 "RcloneVersions"
             );
-            Directory.CreateDirectory(_baseDirectory);
+
+            _versionService.VersionCheckError += (sender, message) =>
+                InitializationError?.Invoke(this, message);
+
+            EnsureBaseDirectoryExists();
         }
 
         public async Task InitializeAsync()
         {
             try
             {
-                // First check if we already have the latest version installed
+                await _initializationLock.WaitAsync();
+                if (_isInitialized)
+                {
+                    return;
+                }
+
+                _logger.LogInformation("Initializing RcloneManager...");
+
                 var (isUpdateAvailable, latestVersion, currentVersion) =
                     await _versionService.CheckRcloneVersion();
 
                 string existingPath = GetExistingRclonePath(latestVersion);
                 if (existingPath != null)
                 {
-                    // We already have the latest version, use it
                     _logger.LogInformation($"Using existing latest rclone v{latestVersion}");
                     CurrentRclonePath = existingPath;
-                    return;
                 }
-
-                if (isUpdateAvailable)
+                else if (isUpdateAvailable)
                 {
                     _logger.LogInformation($"Updating rclone from v{currentVersion} to v{latestVersion}");
+
                     string downloadPath = Path.Combine(
                         _baseDirectory,
                         $"rclone-v{latestVersion}-windows-amd64.zip"
                     );
 
-                    bool downloaded = await _versionService.DownloadLatestRclone(downloadPath);
+                    var progress = new Progress<double>(p => DownloadProgress?.Invoke(this, p));
+                    bool downloaded = await _versionService.DownloadLatestRclone(downloadPath, progress);
+
                     if (downloaded)
                     {
                         CurrentRclonePath = await ExtractRclone(downloadPath, latestVersion);
-                        CleanupOldVersions(latestVersion);
+                        await CleanupOldVersionsAsync(latestVersion);
                     }
                     else
                     {
@@ -79,15 +98,22 @@ namespace DriveSync.Infrastructure.Services
                 }
                 else
                 {
-                    // If no update is available, use the current version
                     CurrentRclonePath = GetExistingRclonePath(currentVersion) ?? "rclone";
                 }
+
+                _isInitialized = true;
+                _logger.LogInformation("RcloneManager initialization completed successfully");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error initializing rclone");
+                _logger.LogError(ex, "Error initializing RcloneManager");
+                InitializationError?.Invoke(this, $"Initialization failed: {ex.Message}");
                 CurrentRclonePath = "rclone"; // Fallback to system rclone
                 throw;
+            }
+            finally
+            {
+                _initializationLock.Release();
             }
         }
 
@@ -98,12 +124,18 @@ namespace DriveSync.Infrastructure.Services
 
             try
             {
-                Directory.CreateDirectory(versionDirectory);
+                _logger.LogInformation($"Extracting rclone v{version} to {versionDirectory}");
 
-                _logger.LogInformation("Extracting rclone");
+                if (!Directory.Exists(versionDirectory))
+                {
+                    Directory.CreateDirectory(versionDirectory);
+                }
+
                 using (var archive = ZipFile.OpenRead(zipPath))
                 {
-                    var rcloneEntry = archive.GetEntry($"rclone-v{version}-windows-amd64/rclone.exe");
+                    var rcloneEntry = archive.Entries.FirstOrDefault(e =>
+                        e.FullName.EndsWith("rclone.exe", StringComparison.OrdinalIgnoreCase));
+
                     if (rcloneEntry == null)
                     {
                         throw new FileNotFoundException("rclone.exe not found in zip archive");
@@ -117,14 +149,42 @@ namespace DriveSync.Infrastructure.Services
                     rcloneEntry.ExtractToFile(rcloneExecutable);
                 }
 
-                // Cleanup zip file
-                File.Delete(zipPath);
+                // Verify the extracted file
+                if (!File.Exists(rcloneExecutable))
+                {
+                    throw new FileNotFoundException("Failed to extract rclone.exe");
+                }
 
+                // Cleanup zip file after successful extraction
+                try
+                {
+                    File.Delete(zipPath);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete zip file after extraction");
+                }
+
+                _logger.LogInformation($"Successfully extracted rclone v{version}");
                 return rcloneExecutable;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error extracting rclone v{version}");
+
+                // Cleanup on failure
+                try
+                {
+                    if (Directory.Exists(versionDirectory))
+                    {
+                        Directory.Delete(versionDirectory, true);
+                    }
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
+
                 throw;
             }
         }
@@ -135,33 +195,122 @@ namespace DriveSync.Infrastructure.Services
                 return null;
 
             string rclonePath = Path.Combine(_baseDirectory, $"v{version}", "rclone.exe");
-            return File.Exists(rclonePath) ? rclonePath : null;
+
+            if (File.Exists(rclonePath))
+            {
+                try
+                {
+                    // Verify the executable
+                    using (var process = new System.Diagnostics.Process())
+                    {
+                        process.StartInfo = new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = rclonePath,
+                            Arguments = "version",
+                            RedirectStandardOutput = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        };
+
+                        process.Start();
+                        process.WaitForExit(5000); // 5 second timeout
+
+                        if (process.ExitCode == 0)
+                        {
+                            return rclonePath;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, $"Failed to verify rclone executable at {rclonePath}");
+                    return null;
+                }
+            }
+
+            return null;
         }
 
-        private void CleanupOldVersions(string latestVersion)
+        private async Task CleanupOldVersionsAsync(string currentVersion)
         {
             try
             {
-                var directories = Directory.GetDirectories(_baseDirectory);
-                foreach (var dir in directories)
+                _logger.LogInformation("Starting cleanup of old rclone versions");
+
+                var directories = Directory.GetDirectories(_baseDirectory)
+                    .Select(d => new DirectoryInfo(d))
+                    .Where(d => d.Name.StartsWith("v", StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(d => d.CreationTime)
+                    .ToList();
+
+                // Keep the current version and the specified number of previous versions
+                var directoriesToKeep = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    if (!dir.Contains($"v{latestVersion}"))
+                    Path.Combine(_baseDirectory, $"v{currentVersion}")
+                };
+
+                // Add the most recent versions up to the limit
+                directoriesToKeep.UnionWith(
+                    directories
+                        .Where(d => !d.Name.Equals($"v{currentVersion}", StringComparison.OrdinalIgnoreCase))
+                        .Take(VERSION_HISTORY_LIMIT - 1)
+                        .Select(d => d.FullName)
+                );
+
+                var deleteTasks = directories
+                    .Where(d => !directoriesToKeep.Contains(d.FullName))
+                    .Select(async d =>
                     {
                         try
                         {
-                            Directory.Delete(dir, true);
-                            _logger.LogInformation($"Cleaned up old version directory: {dir}");
+                            await Task.Run(() => Directory.Delete(d.FullName, true));
+                            _logger.LogInformation($"Cleaned up old version directory: {d.Name}");
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogWarning(ex, $"Could not delete old version directory: {dir}");
+                            _logger.LogWarning(ex, $"Could not delete old version directory: {d.Name}");
                         }
-                    }
+                    });
+
+                await Task.WhenAll(deleteTasks);
+
+                _logger.LogInformation("Cleanup of old rclone versions completed");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during cleanup of old versions");
+            }
+        }
+
+        private void EnsureBaseDirectoryExists()
+        {
+            try
+            {
+                if (!Directory.Exists(_baseDirectory))
+                {
+                    Directory.CreateDirectory(_baseDirectory);
+                    _logger.LogInformation($"Created base directory: {_baseDirectory}");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error cleaning up old versions");
+                _logger.LogError(ex, $"Failed to create base directory: {_baseDirectory}");
+                throw;
+            }
+        }
+
+        public async Task<bool> ReinitializeAsync()
+        {
+            try
+            {
+                _isInitialized = false;
+                await InitializeAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to reinitialize RcloneManager");
+                return false;
             }
         }
     }

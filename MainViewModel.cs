@@ -60,6 +60,7 @@ namespace DriveSync.WPF.ViewModels
         private readonly IRcloneService _rcloneService;
         private readonly ILogger<MainViewModel> _logger;
         private readonly ILoggerFactory _loggerFactory;
+        private readonly RcloneManager _rcloneManager;
         private CancellationTokenSource _syncCancellationTokenSource;
 
         // Progress tracking constants
@@ -74,6 +75,7 @@ namespace DriveSync.WPF.ViewModels
         private static readonly SolidColorBrush ColorDelete = new(Colors.Red);
         private static readonly SolidColorBrush ColorSkip = new(Colors.Orange);
         private static readonly SolidColorBrush ColorScanning = new(Colors.Purple);
+        private static readonly SolidColorBrush ColorUpdate = new(Colors.Teal);
 
         // History file configuration
         private const string HistoryFileName = "syncHistory.json";
@@ -141,6 +143,12 @@ namespace DriveSync.WPF.ViewModels
         [ObservableProperty]
         private string buttonText;
 
+        [ObservableProperty]
+        private bool isUpdateAvailable;
+
+        [ObservableProperty]
+        private bool isCheckingForUpdates;
+
         partial void OnIsSyncingChanged(bool value)
         {
             ButtonText = value ?
@@ -157,18 +165,41 @@ namespace DriveSync.WPF.ViewModels
         public MainViewModel(
             IRcloneService rcloneService,
             ILogger<MainViewModel> logger,
-            ILoggerFactory loggerFactory)
+            ILoggerFactory loggerFactory,
+            RcloneManager rcloneManager)
         {
             _rcloneService = rcloneService;
             _logger = logger;
             _loggerFactory = loggerFactory;
+            _rcloneManager = rcloneManager;
+
+            // Subscribe to RcloneManager events
+            _rcloneManager.DownloadProgress += (sender, progress) =>
+            {
+                StatusMessage = $"Downloading rclone update: {progress:F1}%";
+                StatusIndicatorBrush = ColorUpdate;
+            };
+
+            _rcloneManager.InitializationError += (sender, message) =>
+            {
+                StatusMessage = $"Rclone initialization error: {message}";
+                StatusIndicatorBrush = ColorDelete;
+            };
+
+            _rcloneManager.RclonePathChanged += (sender, path) =>
+            {
+                string version = ExtractVersionFromPath(path);
+                UpdateMessage = $"rclone v{version}";
+                StatusMessage = $"{AvailableRemotes.Count} felhő tárhely betöltve"; // Changed from "Using rclone v{version}"
+                StatusIndicatorBrush = ColorCheck;
+            };
 
             AvailableSyncModes = new ObservableCollection<SyncTypeOption>
-    {
-        new SyncTypeOption { DisplayName = LocalizationManager.Instance["SyncModeOption1"], Value = SyncType.Mirror },
-        new SyncTypeOption { DisplayName = LocalizationManager.Instance["SyncModeOption2"], Value = SyncType.Backup },
-        new SyncTypeOption { DisplayName = LocalizationManager.Instance["SyncModeOption3"], Value = SyncType.Move }
-    };
+            {
+                new SyncTypeOption { DisplayName = LocalizationManager.Instance["SyncModeOption1"], Value = SyncType.Mirror },
+                new SyncTypeOption { DisplayName = LocalizationManager.Instance["SyncModeOption2"], Value = SyncType.Backup },
+                new SyncTypeOption { DisplayName = LocalizationManager.Instance["SyncModeOption3"], Value = SyncType.Move }
+            };
 
             ButtonText = LocalizationManager.Instance["SyncNow"];
 
@@ -209,6 +240,37 @@ namespace DriveSync.WPF.ViewModels
             ApplyTheme(settings.Theme);
             LoadRemotesAsync();
             LoadHistory();
+        }
+
+        [RelayCommand]
+        private async Task CheckForUpdatesAsync()
+        {
+            try
+            {
+                IsCheckingForUpdates = true;
+                StatusMessage = "Checking for rclone updates...";
+                StatusIndicatorBrush = ColorScanning;
+
+                await _rcloneManager.ReinitializeAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking for updates");
+                StatusMessage = "Failed to check for updates";
+                StatusIndicatorBrush = ColorDelete;
+            }
+            finally
+            {
+                IsCheckingForUpdates = false;
+            }
+        }
+
+        private string ExtractVersionFromPath(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return "unknown";
+
+            var match = System.Text.RegularExpressions.Regex.Match(path, @"v(\d+\.\d+\.\d+)");
+            return match.Success ? match.Groups[1].Value : "unknown";
         }
 
         private void LoadHistory()
@@ -274,24 +336,23 @@ namespace DriveSync.WPF.ViewModels
         [RelayCommand]
         private async Task BrowseSourceAsync()
         {
-            // Immediately clear any previous timer
             _statusMessageTimer?.Stop();
 
             if (string.IsNullOrWhiteSpace(SelectedSourceRemote))
             {
                 StatusMessage = LocalizationManager.Instance["PleaseSelectSourceRemoteFirst"];
+                StatusIndicatorBrush = ColorDelete;
 
-                // Setup a timer to clear the message after 3 seconds
                 _statusMessageTimer = new System.Windows.Threading.DispatcherTimer
                 {
                     Interval = TimeSpan.FromSeconds(3)
                 };
                 _statusMessageTimer.Tick += (s, e) =>
                 {
-                    // Only clear if the current message is still the warning message
                     if (StatusMessage == LocalizationManager.Instance["PleaseSelectSourceRemoteFirst"])
                     {
                         StatusMessage = string.Empty;
+                        StatusIndicatorBrush = ColorCheck;
                     }
                     _statusMessageTimer.Stop();
                 };
@@ -306,7 +367,6 @@ namespace DriveSync.WPF.ViewModels
                 var dialog = new DirectoryBrowserDialog(viewModel);
                 if (dialog.ShowDialog() == true)
                 {
-                    // Immediately clear the warning message before setting the source path
                     if (StatusMessage == LocalizationManager.Instance["PleaseSelectSourceRemoteFirst"])
                     {
                         StatusMessage = string.Empty;
@@ -314,42 +374,41 @@ namespace DriveSync.WPF.ViewModels
                     }
 
                     SourcePath = dialog.SelectedPath;
-
-                    // Use localized message for selected source path
                     StatusMessage = string.Format(
                         LocalizationManager.Instance["SelectedSourcePath"],
                         SourcePath
                     );
+                    StatusIndicatorBrush = ColorCheck;
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error browsing source directory");
                 StatusMessage = "Error browsing directory. Please try again.";
+                StatusIndicatorBrush = ColorDelete;
             }
         }
 
         [RelayCommand]
         private async Task BrowseTargetAsync()
         {
-            // Immediately clear any previous timer
             _statusMessageTimer?.Stop();
 
             if (string.IsNullOrWhiteSpace(SelectedTargetRemote))
             {
                 StatusMessage = LocalizationManager.Instance["PleaseSelectTargetRemoteFirst"];
+                StatusIndicatorBrush = ColorDelete;
 
-                // Setup a timer to clear the message after 3 seconds
                 _statusMessageTimer = new System.Windows.Threading.DispatcherTimer
                 {
                     Interval = TimeSpan.FromSeconds(3)
                 };
                 _statusMessageTimer.Tick += (s, e) =>
                 {
-                    // Only clear if the current message is still the warning message
                     if (StatusMessage == LocalizationManager.Instance["PleaseSelectTargetRemoteFirst"])
                     {
                         StatusMessage = string.Empty;
+                        StatusIndicatorBrush = ColorCheck;
                     }
                     _statusMessageTimer.Stop();
                 };
@@ -364,7 +423,6 @@ namespace DriveSync.WPF.ViewModels
                 var dialog = new DirectoryBrowserDialog(viewModel);
                 if (dialog.ShowDialog() == true)
                 {
-                    // Immediately clear the warning message before setting the target path
                     if (StatusMessage == LocalizationManager.Instance["PleaseSelectTargetRemoteFirst"])
                     {
                         StatusMessage = string.Empty;
@@ -372,28 +430,23 @@ namespace DriveSync.WPF.ViewModels
                     }
 
                     TargetPath = dialog.SelectedPath;
-
-                    // Use localized message for selected target path
                     StatusMessage = string.Format(
                         LocalizationManager.Instance["SelectedTargetPath"],
                         TargetPath
                     );
+                    StatusIndicatorBrush = ColorCheck;
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error browsing target directory");
                 StatusMessage = "Error browsing directory. Please try again.";
+                StatusIndicatorBrush = ColorDelete;
             }
         }
 
         partial void OnSelectedSourceRemoteChanged(string? value)
         {
-            // Added debug logging
-            System.Diagnostics.Debug.WriteLine($"Current Language: {LocalizationManager.Instance.CurrentLanguage}");
-            System.Diagnostics.Debug.WriteLine($"Source Remote Selected Translation: {LocalizationManager.Instance["SourceRemoteSelected"]}");
-            System.Diagnostics.Debug.WriteLine($"Selected Source Remote Value: {value}");
-
             if (!string.IsNullOrWhiteSpace(value))
             {
                 _statusMessageTimer?.Stop();
@@ -403,21 +456,16 @@ namespace DriveSync.WPF.ViewModels
                     StatusMessage = string.Empty;
                 }
 
-                // Update status message to show selected source remote using localization
                 StatusMessage = string.Format(
                     LocalizationManager.Instance["SourceRemoteSelected"],
                     value
                 );
+                StatusIndicatorBrush = ColorCheck;
             }
         }
 
         partial void OnSelectedTargetRemoteChanged(string? value)
         {
-            // Added debug logging
-            System.Diagnostics.Debug.WriteLine($"Current Language: {LocalizationManager.Instance.CurrentLanguage}");
-            System.Diagnostics.Debug.WriteLine($"Target Remote Selected Translation: {LocalizationManager.Instance["TargetRemoteSelected"]}");
-            System.Diagnostics.Debug.WriteLine($"Selected Target Remote Value: {value}");
-
             if (!string.IsNullOrWhiteSpace(value))
             {
                 _statusMessageTimer?.Stop();
@@ -427,11 +475,11 @@ namespace DriveSync.WPF.ViewModels
                     StatusMessage = string.Empty;
                 }
 
-                // Update status message to show selected target remote using localization
                 StatusMessage = string.Format(
                     LocalizationManager.Instance["TargetRemoteSelected"],
                     value
                 );
+                StatusIndicatorBrush = ColorCheck;
             }
         }
 
@@ -446,6 +494,7 @@ namespace DriveSync.WPF.ViewModels
             if (!IsValid)
             {
                 StatusMessage = "Please select valid source and target settings.";
+                StatusIndicatorBrush = ColorDelete;
                 return;
             }
 
@@ -459,7 +508,7 @@ namespace DriveSync.WPF.ViewModels
                 RemainingTime = "Calculating...";
                 CurrentFile = "Preparing to sync...";
                 CurrentSyncOperation = "INITIALIZING";
-                StatusIndicatorBrush = new SolidColorBrush(Colors.Purple);
+                StatusIndicatorBrush = ColorScanning;
                 _lastReportedProgress = 0;
 
                 _syncCancellationTokenSource = new CancellationTokenSource();
@@ -491,18 +540,18 @@ namespace DriveSync.WPF.ViewModels
                 ProgressPercentage = "100%";
                 CurrentFile = "Sync completed";
                 StatusMessage = "Sync completed successfully";
-                StatusIndicatorBrush = new SolidColorBrush(Colors.Green);
+                StatusIndicatorBrush = ColorCheck;
             }
             catch (OperationCanceledException)
             {
                 StatusMessage = "Sync operation cancelled.";
-                StatusIndicatorBrush = new SolidColorBrush(Colors.Orange);
+                StatusIndicatorBrush = ColorSkip;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Sync failed");
                 StatusMessage = $"Sync failed: {ex.Message}";
-                StatusIndicatorBrush = new SolidColorBrush(Colors.Red);
+                StatusIndicatorBrush = ColorDelete;
             }
             finally
             {
@@ -571,25 +620,24 @@ namespace DriveSync.WPF.ViewModels
                         AvailableRemotes.Add(remote.TrimEnd(':'));
                     }
 
-                    // Use localization for the status message
                     StatusMessage = string.Format(
                         LocalizationManager.Instance["RemotesLoadedMessage"],
                         AvailableRemotes.Count
                     );
 
-                    StatusIndicatorBrush = new SolidColorBrush(Colors.Green);
+                    StatusIndicatorBrush = ColorCheck;
                 }
                 else
                 {
                     StatusMessage = LocalizationManager.Instance["NoRemotesFound"];
-                    StatusIndicatorBrush = new SolidColorBrush(Colors.Red);
+                    StatusIndicatorBrush = ColorDelete;
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to load remotes");
                 StatusMessage = LocalizationManager.Instance["RemotesLoadError"];
-                StatusIndicatorBrush = new SolidColorBrush(Colors.Red);
+                StatusIndicatorBrush = ColorDelete;
             }
         }
 
@@ -660,7 +708,6 @@ namespace DriveSync.WPF.ViewModels
             }
         }
 
-
         public void ApplyTheme(string themeName)
         {
             var settings = AppSettings.Load();
@@ -725,9 +772,7 @@ namespace DriveSync.WPF.ViewModels
             }
         }
 
-
-
-        // SyncHistoryItem inner class for tracking sync operations
+        // SyncHistoryItem class for tracking sync operations
         public class SyncHistoryItem
         {
             public DateTime Timestamp { get; set; }
@@ -736,4 +781,3 @@ namespace DriveSync.WPF.ViewModels
         }
     }
 }
-
