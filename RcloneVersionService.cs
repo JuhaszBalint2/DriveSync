@@ -9,14 +9,39 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Net;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace DriveSync.Infrastructure.Services
 {
+    public class RcloneVersionException : Exception
+    {
+        public RcloneErrorType ErrorType { get; }
+
+        public RcloneVersionException(string message, RcloneErrorType errorType, Exception innerException = null)
+            : base(message, innerException)
+        {
+            ErrorType = errorType;
+        }
+    }
+
+    public enum RcloneErrorType
+    {
+        NetworkError,
+        DownloadError,
+        ValidationError,
+        ExtractionError,
+        VersionCheckError,
+        UnknownError
+    }
+
     public interface IRcloneVersionService
     {
         Task<(bool IsUpdateAvailable, string LatestVersion, string CurrentVersion)> CheckRcloneVersion();
         Task<bool> DownloadLatestRclone(string downloadPath, IProgress<double> progress = null);
+        Task<bool> ValidateRcloneFile(string filePath);
+        Task<bool> RollbackToVersion(string version);
         event EventHandler<string> VersionCheckError;
+        event EventHandler<(string Message, RcloneErrorType ErrorType)> ErrorOccurred;
     }
 
     public class RcloneVersionService : IRcloneVersionService
@@ -28,9 +53,20 @@ namespace DriveSync.Infrastructure.Services
         private const int MAX_RETRIES = 3;
         private const int RETRY_DELAY_MS = 1000;
         private DateTime _lastApiCall = DateTime.MinValue;
-        private const int API_CALL_DELAY_MS = 1000; // Minimum delay between API calls
+        private const int API_CALL_DELAY_MS = 1000;
+        private const int CHUNK_SIZE = 8192;
+        private const string VERSION_HISTORY_FILE = "version_history.json";
 
         public event EventHandler<string> VersionCheckError;
+        public event EventHandler<(string Message, RcloneErrorType ErrorType)> ErrorOccurred;
+
+        private class VersionHistory
+        {
+            public string Version { get; set; }
+            public string Path { get; set; }
+            public DateTime InstallDate { get; set; }
+            public string Checksum { get; set; }
+        }
 
         public RcloneVersionService(ILogger<RcloneVersionService> logger)
         {
@@ -38,7 +74,7 @@ namespace DriveSync.Infrastructure.Services
             _httpClient = new HttpClient
             {
                 BaseAddress = new Uri(GITHUB_API_URL),
-                Timeout = TimeSpan.FromSeconds(30)
+                Timeout = TimeSpan.FromMinutes(5) // Increased timeout for large downloads
             };
             _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("DriveSync");
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -46,98 +82,276 @@ namespace DriveSync.Infrastructure.Services
 
         public async Task<(bool IsUpdateAvailable, string LatestVersion, string CurrentVersion)> CheckRcloneVersion()
         {
-            try
+            int retryCount = 0;
+            while (retryCount < MAX_RETRIES)
             {
-                await EnsureApiRateLimit();
-
-                string currentVersion = GetCurrentRcloneVersion();
-                _logger.LogInformation($"Current rclone version: {currentVersion}");
-
-                var latestRelease = await FetchLatestRcloneReleaseWithRetry();
-                if (latestRelease == null)
+                try
                 {
-                    _logger.LogWarning("Could not fetch latest rclone version");
-                    OnVersionCheckError("Could not fetch latest version information. Please try again later.");
-                    return (false, null, currentVersion);
+                    await EnsureApiRateLimit();
+
+                    string currentVersion = await GetCurrentRcloneVersion();
+                    _logger.LogInformation($"Current rclone version: {currentVersion}");
+
+                    var latestRelease = await FetchLatestRcloneReleaseWithRetry();
+                    if (latestRelease == null)
+                    {
+                        OnErrorOccurred("Could not fetch latest version information.", RcloneErrorType.VersionCheckError);
+                        return (false, null, currentVersion);
+                    }
+
+                    string latestVersion = latestRelease.tag_name.TrimStart('v');
+                    bool isUpdateAvailable = IsNewVersionAvailable(currentVersion, latestVersion);
+
+                    _logger.LogInformation($"Latest version: {latestVersion}, Update available: {isUpdateAvailable}");
+                    return (isUpdateAvailable, latestVersion, currentVersion);
                 }
-
-                string latestVersion = latestRelease.tag_name.TrimStart('v');
-                bool isUpdateAvailable = IsNewVersionAvailable(currentVersion, latestVersion);
-
-                _logger.LogInformation($"Latest version: {latestVersion}, Update available: {isUpdateAvailable}");
-                return (isUpdateAvailable, latestVersion, currentVersion);
+                catch (HttpRequestException ex)
+                {
+                    _logger.LogError(ex, $"HTTP error checking version (attempt {retryCount + 1}/{MAX_RETRIES})");
+                    if (retryCount == MAX_RETRIES - 1)
+                    {
+                        OnErrorOccurred($"Network error: {ex.Message}", RcloneErrorType.NetworkError);
+                        throw new RcloneVersionException("Failed to check version after multiple attempts", RcloneErrorType.NetworkError, ex);
+                    }
+                    await Task.Delay((retryCount + 1) * RETRY_DELAY_MS);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error checking rclone version");
+                    OnErrorOccurred($"Unexpected error: {ex.Message}", RcloneErrorType.UnknownError);
+                    throw new RcloneVersionException("Failed to check version", RcloneErrorType.UnknownError, ex);
+                }
+                retryCount++;
             }
-            catch (HttpRequestException ex)
-            {
-                HandleHttpError(ex);
-                return (false, null, null);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error checking rclone version");
-                OnVersionCheckError($"Error checking for updates: {ex.Message}");
-                return (false, null, null);
-            }
+            throw new RcloneVersionException("Maximum retry attempts exceeded", RcloneErrorType.NetworkError);
         }
 
         public async Task<bool> DownloadLatestRclone(string downloadPath, IProgress<double> progress = null)
         {
+            int retryCount = 0;
+            long? resumePosition = 0;
+
+            while (retryCount < MAX_RETRIES)
+            {
+                try
+                {
+                    var latestRelease = await FetchLatestRcloneReleaseWithRetry();
+                    if (latestRelease == null)
+                    {
+                        OnErrorOccurred("Could not fetch release information", RcloneErrorType.DownloadError);
+                        return false;
+                    }
+
+                    var downloadAsset = Array.Find(latestRelease.assets,
+                        a => a.name.Contains("windows-amd64.zip", StringComparison.OrdinalIgnoreCase));
+
+                    if (downloadAsset == null)
+                    {
+                        OnErrorOccurred("Windows release package not found", RcloneErrorType.DownloadError);
+                        return false;
+                    }
+
+                    bool downloadSuccess = await DownloadFileWithProgress(
+                        downloadAsset.browser_download_url,
+                        downloadPath,
+                        progress,
+                        resumePosition);
+
+                    if (downloadSuccess)
+                    {
+                        if (await ValidateRcloneFile(downloadPath))
+                        {
+                            await SaveVersionHistory(latestRelease.tag_name, downloadPath);
+                            return true;
+                        }
+                        else
+                        {
+                            File.Delete(downloadPath);
+                            OnErrorOccurred("Downloaded file validation failed", RcloneErrorType.ValidationError);
+                            return false;
+                        }
+                    }
+
+                    resumePosition = new FileInfo(downloadPath).Length;
+                    retryCount++;
+                    await Task.Delay(RETRY_DELAY_MS * retryCount);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error downloading rclone (attempt {retryCount + 1}/{MAX_RETRIES})");
+                    if (retryCount == MAX_RETRIES - 1)
+                    {
+                        OnErrorOccurred($"Download failed: {ex.Message}", RcloneErrorType.DownloadError);
+                        return false;
+                    }
+                    retryCount++;
+                    await Task.Delay(RETRY_DELAY_MS * retryCount);
+                }
+            }
+            return false;
+        }
+
+        public async Task<bool> ValidateRcloneFile(string filePath)
+        {
             try
             {
-                await EnsureApiRateLimit();
-
-                var latestRelease = await FetchLatestRcloneReleaseWithRetry();
-                if (latestRelease == null)
+                if (!File.Exists(filePath))
                 {
-                    OnVersionCheckError("Could not fetch release information.");
+                    OnErrorOccurred("File not found", RcloneErrorType.ValidationError);
                     return false;
                 }
 
-                var downloadAsset = Array.Find(latestRelease.assets,
-                    a => a.name.Contains("windows-amd64.zip", StringComparison.OrdinalIgnoreCase));
-
-                if (downloadAsset == null)
+                // Calculate file hash
+                string fileHash;
+                using (var sha256 = SHA256.Create())
+                using (var stream = File.OpenRead(filePath))
                 {
-                    OnVersionCheckError("Windows release package not found.");
-                    return false;
+                    var hash = await Task.Run(() => sha256.ComputeHash(stream));
+                    fileHash = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
                 }
 
-                return await DownloadFileWithProgress(downloadAsset.browser_download_url, downloadPath, progress);
+                // Basic file validation
+                using (var archive = System.IO.Compression.ZipFile.OpenRead(filePath))
+                {
+                    var rcloneEntry = archive.Entries.FirstOrDefault(e =>
+                        e.FullName.EndsWith("rclone.exe", StringComparison.OrdinalIgnoreCase));
+
+                    if (rcloneEntry == null)
+                    {
+                        OnErrorOccurred("rclone.exe not found in archive", RcloneErrorType.ValidationError);
+                        return false;
+                    }
+
+                    if (rcloneEntry.Length < 1024 * 1024) // Minimum expected size
+                    {
+                        OnErrorOccurred("rclone.exe file size is suspiciously small", RcloneErrorType.ValidationError);
+                        return false;
+                    }
+                }
+
+                return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error downloading rclone");
-                OnVersionCheckError($"Download failed: {ex.Message}");
+                _logger.LogError(ex, "Error validating rclone file");
+                OnErrorOccurred($"Validation error: {ex.Message}", RcloneErrorType.ValidationError);
                 return false;
             }
         }
 
-        private async Task<bool> DownloadFileWithProgress(string url, string destinationPath, IProgress<double> progress)
+        public async Task<bool> RollbackToVersion(string version)
         {
             try
             {
-                using var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+                var historyPath = Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    VERSION_HISTORY_FILE
+                );
+
+                if (!File.Exists(historyPath))
+                {
+                    OnErrorOccurred("No version history found", RcloneErrorType.ValidationError);
+                    return false;
+                }
+
+                var historyJson = await File.ReadAllTextAsync(historyPath);
+                var history = JsonSerializer.Deserialize<VersionHistory[]>(historyJson);
+
+                var targetVersion = history.FirstOrDefault(v => v.Version == version);
+                if (targetVersion == null)
+                {
+                    OnErrorOccurred($"Version {version} not found in history", RcloneErrorType.ValidationError);
+                    return false;
+                }
+
+                if (!File.Exists(targetVersion.Path))
+                {
+                    OnErrorOccurred($"Version {version} files not found", RcloneErrorType.ValidationError);
+                    return false;
+                }
+
+                // Validate the rollback version
+                if (!await ValidateRcloneFile(targetVersion.Path))
+                {
+                    OnErrorOccurred($"Version {version} validation failed", RcloneErrorType.ValidationError);
+                    return false;
+                }
+
+                // Calculate current checksum
+                using (var sha256 = SHA256.Create())
+                using (var stream = File.OpenRead(targetVersion.Path))
+                {
+                    var hash = await Task.Run(() => sha256.ComputeHash(stream));
+                    var currentHash = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+
+                    if (currentHash != targetVersion.Checksum)
+                    {
+                        OnErrorOccurred($"Version {version} checksum mismatch", RcloneErrorType.ValidationError);
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error rolling back to version {version}");
+                OnErrorOccurred($"Rollback error: {ex.Message}", RcloneErrorType.UnknownError);
+                return false;
+            }
+        }
+
+        private async Task<bool> DownloadFileWithProgress(string url, string destinationPath, IProgress<double> progress, long? resumePosition = null)
+        {
+            try
+            {
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                if (resumePosition > 0)
+                {
+                    request.Headers.Range = new RangeHeaderValue(resumePosition, null);
+                }
+
+                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                 response.EnsureSuccessStatusCode();
 
                 var totalBytes = response.Content.Headers.ContentLength ?? -1L;
-                var buffer = new byte[8192];
-                var totalBytesRead = 0L;
+                var totalBytesRead = resumePosition ?? 0L;
 
-                using var fileStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);
                 using var contentStream = await response.Content.ReadAsStreamAsync();
+                using var fileStream = new FileStream(
+                    destinationPath,
+                    resumePosition > 0 ? FileMode.Append : FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.None,
+                    CHUNK_SIZE,
+                    true
+                );
 
-                while (true)
+                var buffer = new byte[CHUNK_SIZE];
+                var lastProgressReport = DateTime.Now;
+                var isMoreToRead = true;
+
+                while (isMoreToRead)
                 {
                     var bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length);
-                    if (bytesRead == 0) break;
+                    if (bytesRead == 0)
+                    {
+                        isMoreToRead = false;
+                        continue;
+                    }
 
                     await fileStream.WriteAsync(buffer, 0, bytesRead);
                     totalBytesRead += bytesRead;
 
-                    if (totalBytes > 0 && progress != null)
+                    var now = DateTime.Now;
+                    if ((now - lastProgressReport).TotalMilliseconds >= 100) // Throttle progress updates
                     {
-                        var progressPercentage = (double)totalBytesRead / totalBytes * 100;
-                        progress.Report(progressPercentage);
+                        if (totalBytes > 0)
+                        {
+                            var progressPercentage = (double)totalBytesRead / totalBytes * 100;
+                            progress?.Report(Math.Round(progressPercentage, 2));
+                        }
+                        lastProgressReport = now;
                     }
                 }
 
@@ -146,16 +360,62 @@ namespace DriveSync.Infrastructure.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error downloading file");
-                if (File.Exists(destinationPath))
-                {
-                    try { File.Delete(destinationPath); }
-                    catch { /* Ignore cleanup errors */ }
-                }
                 throw;
             }
         }
 
-        private string GetCurrentRcloneVersion()
+        private async Task SaveVersionHistory(string version, string filePath)
+        {
+            try
+            {
+                var historyPath = Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    VERSION_HISTORY_FILE
+                );
+
+                var versionHistory = new List<VersionHistory>();
+                if (File.Exists(historyPath))
+                {
+                    var existingHistoryJson = await File.ReadAllTextAsync(historyPath);
+                    versionHistory = JsonSerializer.Deserialize<List<VersionHistory>>(existingHistoryJson);
+                }
+
+                // Calculate checksum
+                string checksum;
+                using (var sha256 = SHA256.Create())
+                using (var stream = File.OpenRead(filePath))
+                {
+                    var hash = await Task.Run(() => sha256.ComputeHash(stream));
+                    checksum = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+                }
+
+                versionHistory.Add(new VersionHistory
+                {
+                    Version = version,
+                    Path = filePath,
+                    InstallDate = DateTime.UtcNow,
+                    Checksum = checksum
+                });
+
+                // Keep only the last 5 versions
+                if (versionHistory.Count > 5)
+                {
+                    versionHistory = versionHistory.OrderByDescending(h => h.InstallDate).Take(5).ToList();
+                }
+
+                var updatedHistoryJson = JsonSerializer.Serialize(versionHistory, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+                await File.WriteAllTextAsync(historyPath, updatedHistoryJson);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving version history");
+            }
+        }
+
+        private async Task<string> GetCurrentRcloneVersion()
         {
             try
             {
@@ -172,19 +432,54 @@ namespace DriveSync.Infrastructure.Services
                     }
                 };
 
+                var output = new System.Text.StringBuilder();
+                var tcs = new TaskCompletionSource<bool>();
+
+                process.OutputDataReceived += (sender, e) =>
+                {
+                    if (e.Data == null)
+                        tcs.TrySetResult(true);
+                    else
+                        output.AppendLine(e.Data);
+                };
+
                 process.Start();
-                string output = process.StandardOutput.ReadToEnd();
-                process.WaitForExit();
+                process.BeginOutputReadLine();
+
+                // Add timeout
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                cts.Token.Register(() => tcs.TrySetCanceled());
+
+                try
+                {
+                    await process.WaitForExitAsync(cts.Token);
+                    await tcs.Task;
+                }
+                catch (OperationCanceledException)
+                {
+                    try { process.Kill(); } catch { }
+                    throw new RcloneVersionException("Timeout getting current version", RcloneErrorType.VersionCheckError);
+                }
+
+                if (process.ExitCode != 0)
+                {
+                    throw new RcloneVersionException(
+                        $"rclone version command failed with exit code {process.ExitCode}",
+                        RcloneErrorType.VersionCheckError);
+                }
 
                 var versionMatch = System.Text.RegularExpressions.Regex
-                    .Match(output, @"rclone\s+v(\d+\.\d+\.\d+)");
+                    .Match(output.ToString(), @"rclone\s+v(\d+\.\d+\.\d+)");
 
                 return versionMatch.Success ? versionMatch.Groups[1].Value : "0.0.0";
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Error getting current rclone version");
-                return "0.0.0";
+                throw new RcloneVersionException(
+                    "Failed to get current rclone version",
+                    RcloneErrorType.VersionCheckError,
+                    ex);
             }
         }
 
@@ -203,28 +498,19 @@ namespace DriveSync.Infrastructure.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error comparing versions");
-                return false;
+                throw new RcloneVersionException(
+                    "Failed to compare versions",
+                    RcloneErrorType.VersionCheckError,
+                    ex);
             }
         }
 
         private Version ParseVersion(string version)
         {
-            // Remove any leading 'v' and trailing information
             version = version.TrimStart('v').Split('-')[0];
-
-            // Ensure we have at least three version components
             var parts = version.Split('.');
-            if (parts.Length < 3)
-            {
-                var paddedVersion = string.Join(".", parts);
-                for (int i = parts.Length; i < 3; i++)
-                {
-                    paddedVersion += ".0";
-                }
-                version = paddedVersion;
-            }
-
-            return new Version(version);
+            var paddedVersion = string.Join(".", parts.Concat(Enumerable.Repeat("0", Math.Max(0, 3 - parts.Length))));
+            return new Version(paddedVersion);
         }
 
         private async Task<GitHubRelease> FetchLatestRcloneReleaseWithRetry()
@@ -251,14 +537,17 @@ namespace DriveSync.Infrastructure.Services
                 }
                 catch (RateLimitExceededException)
                 {
-                    throw; // Don't retry rate limit errors
+                    throw;
                 }
                 catch (Exception ex)
                 {
                     if (attempt == MAX_RETRIES)
                     {
                         _logger.LogError(ex, "Failed to fetch latest release after all retries");
-                        throw;
+                        throw new RcloneVersionException(
+                            "Failed to fetch latest release",
+                            RcloneErrorType.NetworkError,
+                            ex);
                     }
 
                     _logger.LogWarning(ex, $"Attempt {attempt} failed, retrying...");
@@ -279,23 +568,10 @@ namespace DriveSync.Infrastructure.Services
             _lastApiCall = DateTime.UtcNow;
         }
 
-        private void HandleHttpError(HttpRequestException ex)
+        private void OnErrorOccurred(string message, RcloneErrorType errorType)
         {
-            string message = ex.StatusCode switch
-            {
-                HttpStatusCode.Unauthorized => "GitHub API authentication failed.",
-                HttpStatusCode.Forbidden => "Rate limit exceeded. Please try again later.",
-                HttpStatusCode.NotFound => "Release information not found.",
-                _ => "Error connecting to GitHub. Please check your internet connection."
-            };
-
-            _logger.LogError(ex, message);
-            OnVersionCheckError(message);
-        }
-
-        protected virtual void OnVersionCheckError(string message)
-        {
-            VersionCheckError?.Invoke(this, message);
+            _logger.LogError($"Rclone error occurred: {message} (Type: {errorType})");
+            ErrorOccurred?.Invoke(this, (message, errorType));
         }
     }
 
