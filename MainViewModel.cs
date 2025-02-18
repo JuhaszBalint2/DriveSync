@@ -309,6 +309,27 @@ namespace DriveSync.WPF.ViewModels
         }
 
         [RelayCommand]
+        private void OpenSyncHistoryList()
+        {
+            if (SyncHistory == null || SyncHistory.Count == 0)
+            {
+                MessageBox.Show(
+                    LocalizationManager.Instance["NoSyncHistoryAvailable"],
+                    LocalizationManager.Instance["SyncHistory"],
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information
+                );
+                return;
+            }
+
+            // Create a new window to display sync history
+            var historyListWindow = new SyncHistoryListWindow(SyncHistory);
+            historyListWindow.Owner = Application.Current.MainWindow;
+            historyListWindow.ShowDialog();
+        }
+
+
+        [RelayCommand]
         private void OpenSettings()
         {
             var settingsWindow = new SettingsWindow(

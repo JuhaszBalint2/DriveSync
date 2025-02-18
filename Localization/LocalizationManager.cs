@@ -324,7 +324,8 @@ namespace DriveSync.WPF.Localization
             // In AddEnglishTranslations method
             SafeAddTranslation(englishTranslations, "DisableDirectoryTraversalTooltip", "Don't traverse destination file system on copy");
 
-
+            SafeAddTranslation(englishTranslations, "SyncHistory", "Sync History");
+            SafeAddTranslation(englishTranslations, "NoSyncHistoryAvailable", "No sync history available.");
 
 
 
@@ -654,7 +655,8 @@ namespace DriveSync.WPF.Localization
             // In AddHungarianTranslations method
             SafeAddTranslation(hungarianTranslations, "DisableDirectoryTraversalTooltip", "Ne járja be a célrendszer fájlrendszerét másolás közben");
 
-
+            SafeAddTranslation(hungarianTranslations, "SyncHistory", "Szinkronizálási előzmények");
+            SafeAddTranslation(hungarianTranslations, "NoSyncHistoryAvailable", "Nincs szinkronizálási előzmény.");
 
 
         }
