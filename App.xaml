@@ -13,6 +13,8 @@
             <converters:EnglishSelectedConverter x:Key="EnglishSelectedConverter"/>
             <converters:HungarianSelectedConverter x:Key="HungarianSelectedConverter"/>
             <converters:LocalizationConverter x:Key="LocalizationConverter"/>
+            <converters:ProgressToWidthConverter x:Key="ProgressToWidthConverter"/>
+            <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

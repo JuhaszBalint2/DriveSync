@@ -22,6 +22,10 @@
     TextOptions.TextFormattingMode="Display"
     TextOptions.TextRenderingMode="ClearType">
 
+    <views:ModernWindowBase.Resources>
+        <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+    </views:ModernWindowBase.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -105,215 +109,303 @@
 
         <!-- Main Content Area -->
         <Grid Grid.Row="1" Margin="20">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-
             <!-- Sync Configuration Area -->
-            <Grid Grid.Row="0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+            <Border Background="{DynamicResource SurfaceBrush}"
+                    CornerRadius="7"
+                    Padding="17"
+                    BorderBrush="{DynamicResource BorderDefaultBrush}"
+                    BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="40"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="24"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                <!-- Sync Configuration Panel -->
-                <Border Background="{DynamicResource SurfaceBrush}"
-                        CornerRadius="7"
-                        Padding="17"
-                        BorderBrush="{DynamicResource BorderDefaultBrush}"
-                        BorderThickness="1">
-                    <StackPanel>
-                        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncConfiguration]}"
-                                 Style="{DynamicResource SubheadingStyle}"
-                                 FontSize="20"
-                                 Margin="0,0,0,16"/>
+                    <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncConfiguration]}"
+                              Style="{DynamicResource SubheadingStyle}"
+                              FontSize="20"
+                              Margin="0,0,0,16"
+                              Grid.Row="0"/>
 
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                    <!-- Source Target Configuration -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                            <!-- Source Panel -->
-                            <DockPanel Grid.Column="0" Margin="0,0,7,0">
-                                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Source]}"
-                                         Style="{DynamicResource BodyTextStyle}"
-                                         FontSize="13"
-                                         DockPanel.Dock="Top"
-                                         Margin="0,0,0,8"/>
-                                <ComboBox ItemsSource="{Binding AvailableRemotes}"
-                                        SelectedItem="{Binding SelectedSourceRemote}"
+                        <!-- Source Panel -->
+                        <DockPanel Grid.Column="0" Margin="0,0,7,0">
+                            <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Source]}"
+                                     Style="{DynamicResource BodyTextStyle}"
+                                     FontSize="13"
+                                     DockPanel.Dock="Top"
+                                     Margin="0,0,0,8"/>
+                            <ComboBox ItemsSource="{Binding AvailableRemotes}"
+                                    SelectedItem="{Binding SelectedSourceRemote}"
+                                    Height="32"
+                                    DockPanel.Dock="Top"
+                                    FontSize="13"
+                                    Margin="0,0,0,8"/>
+                            <Grid DockPanel.Dock="Top">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Browse]}"
+                                        Command="{Binding BrowseSourceCommand}"
+                                        Style="{DynamicResource ButtonBaseStyle}"
+                                        MinWidth="102"
                                         Height="32"
-                                        DockPanel.Dock="Top"
-                                        FontSize="13"
-                                        Margin="0,0,0,8"/>
-                                <Grid DockPanel.Dock="Top">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
+                                        Padding="10,6"
+                                        Grid.Column="0"
+                                        Margin="0,0,8,0"/>
 
-                                    <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Browse]}"
-                                            Command="{Binding BrowseSourceCommand}"
-                                            Style="{DynamicResource ButtonBaseStyle}"
-                                            MinWidth="102"
-                                            Height="32"
-                                            Padding="10,6"
-                                            Grid.Column="0"
-                                            Margin="0,0,8,0"/>
+                                <Border Grid.Column="1"
+                                        Background="{DynamicResource SurfaceBrush}"
+                                        BorderBrush="{DynamicResource BorderDefaultBrush}"
+                                        BorderThickness="1"
+                                        Height="32"
+                                        CornerRadius="4">
+                                    <TextBlock Text="{Binding SourcePath}"
+                                             ToolTip="{Binding SourcePath}"
+                                             VerticalAlignment="Center"
+                                             Margin="8,0"
+                                             FontSize="13"
+                                             Foreground="{DynamicResource TextPrimaryBrush}"
+                                             TextWrapping="NoWrap"
+                                             TextTrimming="CharacterEllipsis"/>
+                                </Border>
+                            </Grid>
+                        </DockPanel>
 
-                                    <Border Grid.Column="1"
-                                            Background="{DynamicResource SurfaceBrush}"
-                                            BorderBrush="{DynamicResource BorderDefaultBrush}"
-                                            BorderThickness="1"
-                                            Height="32"
-                                            CornerRadius="4">
-                                        <TextBlock Text="{Binding SourcePath}"
-                                                 ToolTip="{Binding SourcePath}"
-                                                 VerticalAlignment="Center"
-                                                 Margin="8,0"
-                                                 FontSize="13"
-                                                 Foreground="{DynamicResource TextPrimaryBrush}"
-                                                 TextWrapping="NoWrap"
-                                                 TextTrimming="CharacterEllipsis"/>
-                                    </Border>
-                                </Grid>
-                            </DockPanel>
-
-                            <!-- Arrow -->
-                            <TextBlock Grid.Column="1"
+                        <!-- Arrow -->
+                        <TextBlock Grid.Column="1"
                                      Text="➔"
                                      FontSize="24"
                                      VerticalAlignment="Top"
                                      Margin="13,32"
                                      Foreground="{DynamicResource TextPrimaryBrush}"/>
 
-                            <!-- Target Panel -->
-                            <DockPanel Grid.Column="2" Margin="7,0,0,0">
-                                <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Target]}"
-                                         Style="{DynamicResource BodyTextStyle}"
-                                         FontSize="13"
-                                         DockPanel.Dock="Top"
-                                         Margin="0,0,0,8"/>
-                                <ComboBox ItemsSource="{Binding AvailableRemotes}"
-                                        SelectedItem="{Binding SelectedTargetRemote}"
-                                        Height="32"
-                                        DockPanel.Dock="Top"
-                                        FontSize="13"
-                                        Margin="0,0,0,8"/>
-                                <Grid DockPanel.Dock="Top">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Browse]}"
-                                            Command="{Binding BrowseTargetCommand}"
-                                            Style="{DynamicResource ButtonBaseStyle}"
-                                            MinWidth="102"
-                                            Height="32"
-                                            Padding="10,6"
-                                            Grid.Column="0"
-                                            Margin="0,0,8,0"/>
-                                    <Border Grid.Column="1"
-                                            Background="{DynamicResource SurfaceBrush}"
-                                            BorderBrush="{DynamicResource BorderDefaultBrush}"
-                                            BorderThickness="1"
-                                            Height="32"
-                                            CornerRadius="4"
-                                            Padding="7,0"
-                                            VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding TargetPath}"
-                                                 ToolTip="{Binding TargetPath}"
-                                                 VerticalAlignment="Center"
-                                                 Margin="8,0"
-                                                 FontSize="13"
-                                                 Foreground="{DynamicResource TextPrimaryBrush}"
-                                                 TextWrapping="NoWrap"
-                                                 TextTrimming="CharacterEllipsis"/>
-                                    </Border>
-                                </Grid>
-                            </DockPanel>
-                        </Grid>
-
-                        <!-- Sync Mode Selection -->
-                        <DockPanel LastChildFill="False" 
-                                 Margin="0,24,0,0">
-                            <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncMode]}"
+                        <!-- Target Panel -->
+                        <DockPanel Grid.Column="2" Margin="7,0,0,0">
+                            <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Target]}"
                                      Style="{DynamicResource BodyTextStyle}"
                                      FontSize="13"
-                                     VerticalAlignment="Center"
-                                     DockPanel.Dock="Left"
-                                     Margin="0,0,8,0"/>
-                            <ComboBox ItemsSource="{Binding AvailableSyncModes}"
-                                    SelectedItem="{Binding SelectedSyncMode}"
-                                    Width="200"
+                                     DockPanel.Dock="Top"
+                                     Margin="0,0,0,8"/>
+                            <ComboBox ItemsSource="{Binding AvailableRemotes}"
+                                    SelectedItem="{Binding SelectedTargetRemote}"
                                     Height="32"
+                                    DockPanel.Dock="Top"
                                     FontSize="13"
-                                    DockPanel.Dock="Left">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding DisplayName}"
-                                                 FontSize="13"/>
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
+                                    Margin="0,0,0,8"/>
+                            <Grid DockPanel.Dock="Top">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Browse]}"
+                                        Command="{Binding BrowseTargetCommand}"
+                                        Style="{DynamicResource ButtonBaseStyle}"
+                                        MinWidth="102"
+                                        Height="32"
+                                        Padding="10,6"
+                                        Grid.Column="0"
+                                        Margin="0,0,8,0"/>
+                                <Border Grid.Column="1"
+                                        Background="{DynamicResource SurfaceBrush}"
+                                        BorderBrush="{DynamicResource BorderDefaultBrush}"
+                                        BorderThickness="1"
+                                        Height="32"
+                                        CornerRadius="4"
+                                        Padding="7,0"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding TargetPath}"
+                                             ToolTip="{Binding TargetPath}"
+                                             VerticalAlignment="Center"
+                                             Margin="8,0"
+                                             FontSize="13"
+                                             Foreground="{DynamicResource TextPrimaryBrush}"
+                                             TextWrapping="NoWrap"
+                                             TextTrimming="CharacterEllipsis"/>
+                                </Border>
+                            </Grid>
                         </DockPanel>
-                    </StackPanel>
-                </Border>
-            </Grid>
+                    </Grid>
 
-            <!-- Progress Section -->
-            <Grid Grid.Row="1" 
-                  Margin="20,0,20,13" 
-                  Visibility="{Binding IsSyncing, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+                    <!-- Sync Mode Selection -->
+                    <DockPanel Grid.Row="3" 
+                             LastChildFill="False">
+                        <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncMode]}"
+                                 Style="{DynamicResource BodyTextStyle}"
+                                 FontSize="13"
+                                 VerticalAlignment="Center"
+                                 DockPanel.Dock="Left"
+                                 Margin="0,0,8,0"/>
+                        <ComboBox ItemsSource="{Binding AvailableSyncModes}"
+                                SelectedItem="{Binding SelectedSyncMode}"
+                                Width="200"
+                                Height="32"
+                                FontSize="13"
+                                DockPanel.Dock="Left">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayName}"
+                                             FontSize="13"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </DockPanel>
 
-                <TextBlock Grid.Row="0"
-                         Text="{Binding CurrentSyncOperation}"
-                         Style="{DynamicResource BodyTextStyle}"
-                         FontSize="13"
-                         FontWeight="SemiBold"
-                         Margin="0,0,0,4"/>
+                    <!-- Progress Section -->
+                    <Border Grid.Row="5" 
+                            Background="{DynamicResource BackgroundBrush}"
+                            BorderBrush="{DynamicResource BorderDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="16">
+                        <Grid>
+                            <!-- Waiting for sync message -->
+                            <TextBlock Text="Waiting for sync..."
+                                      Style="{DynamicResource BodyTextStyle}"
+                                      FontSize="13"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Visibility="{Binding IsSyncing, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
 
-                <TextBlock Grid.Row="1"
-                         Text="{Binding CurrentFile}"
-                         Style="{DynamicResource BodyTextStyle}"
-                         FontSize="13"
-                         Margin="0,0,0,8"/>
+                            <!-- Active sync progress -->
+                            <Grid Visibility="{Binding IsSyncing, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="2"
-                         Text="{Binding ProgressPercentage, StringFormat='{}{0} complete'}"
-                         Style="{DynamicResource BodyTextStyle}"
-                         FontSize="13"
-                         Margin="0,0,0,4"/>
+                                <!-- Operation and File Info -->
+                                <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                                    <TextBlock Text="{Binding CurrentSyncOperation}"
+                                              Style="{DynamicResource SubheadingStyle}"
+                                              FontSize="16"
+                                              FontWeight="SemiBold"
+                                              Margin="0,0,0,4"/>
+                                    <TextBlock Text="{Binding CurrentFile}"
+                                              Style="{DynamicResource BodyTextStyle}"
+                                              FontSize="13"
+                                              Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                </StackPanel>
 
-                <ProgressBar Grid.Row="3"
-                           Value="{Binding ProgressValue}"
-                           Height="12"
-                           Margin="0,0,0,8"
-                           Minimum="0"
-                           Maximum="100"
-                           SnapsToDevicePixels="True"/>
+                                <!-- Progress Bar Section -->
+                                <Grid Grid.Row="1" Margin="0,0,0,12">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="4"
-                          Orientation="Horizontal">
-                    <TextBlock Text="{Binding CurrentSpeed}"
-                             Style="{DynamicResource BodyTextStyle}"
-                             FontSize="13"
-                             Margin="0,0,16,0"/>
-                    <TextBlock Text="{Binding RemainingTime}"
-                             Style="{DynamicResource BodyTextStyle}"
-                             FontSize="13"/>
-                </StackPanel>
-            </Grid>
+                                    <TextBlock Text="{Binding ProgressPercentage, StringFormat='{}{0} complete'}"
+                                              Style="{DynamicResource BodyTextStyle}"
+                                              FontSize="13"
+                                              HorizontalAlignment="Right"
+                                               Margin="0,0,0,4"/>
+
+                                    <Border Grid.Row="1" 
+                                            Background="{DynamicResource BackgroundBrush}"
+                                            CornerRadius="6"
+                                            Height="8">
+                                        <Border.Effect>
+                                            <DropShadowEffect ShadowDepth="1" 
+                                                            BlurRadius="4" 
+                                                            Opacity="0.1"/>
+                                        </Border.Effect>
+                                        <Grid>
+                                            <ProgressBar Value="{Binding ProgressValue}"
+                                                       Maximum="100"
+                                                       Minimum="0"
+                                                       Height="8"
+                                                       Background="Transparent"
+                                                       BorderThickness="0">
+                                                <ProgressBar.Style>
+                                                    <Style TargetType="ProgressBar">
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="ProgressBar">
+                                                                    <Grid>
+                                                                        <Border x:Name="PART_Track"
+                                                                                Background="{TemplateBinding Background}"
+                                                                                CornerRadius="6"/>
+                                                                        <Border x:Name="PART_Indicator"
+                                                                                Background="{DynamicResource AccentBrush}"
+                                                                                CornerRadius="6"
+                                                                                HorizontalAlignment="Left">
+                                                                            <Border.Width>
+                                                                                <MultiBinding>
+                                                                                    <MultiBinding.Converter>
+                                                                                        <converters:ProgressToWidthConverter/>
+                                                                                    </MultiBinding.Converter>
+                                                                                    <Binding Path="Value" 
+                                                                                             RelativeSource="{RelativeSource TemplatedParent}"/>
+                                                                                    <Binding Path="Minimum" 
+                                                                                             RelativeSource="{RelativeSource TemplatedParent}"/>
+                                                                                    <Binding Path="Maximum" 
+                                                                                             RelativeSource="{RelativeSource TemplatedParent}"/>
+                                                                                    <Binding Path="ActualWidth" 
+                                                                                             RelativeSource="{RelativeSource TemplatedParent}"/>
+                                                                                </MultiBinding>
+                                                                            </Border.Width>
+                                                                        </Border>
+                                                                    </Grid>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </Style>
+                                                </ProgressBar.Style>
+                                            </ProgressBar>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+
+                                <!-- Speed and Time Info -->
+                                <StackPanel Grid.Row="2" 
+                                          Orientation="Horizontal"
+                                          Margin="0,4,0,0">
+                                    <StackPanel Orientation="Horizontal" 
+                                              Margin="0,0,24,0">
+                                        <Path Data="M13.645 10.605l-5.25-5.25a.75.75 0 00-1.06 0l-5.25 5.25a.75.75 0 001.06 1.06L8 7.06l4.855 4.855a.75.75 0 001.06-1.06z"
+                                              Fill="{DynamicResource TextSecondaryBrush}"
+                                              Width="12"
+                                              Height="12"
+                                              Margin="0,0,8,0"
+                                              VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding CurrentSpeed}"
+                                                  Style="{DynamicResource BodyTextStyle}"
+                                                  FontSize="13"
+                                                  Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Data="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                                              Fill="{DynamicResource TextSecondaryBrush}"
+                                              Width="12"
+                                              Height="12"
+                                              Margin="0,0,8,0"
+                                              VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding RemainingTime}"
+                                                  Style="{DynamicResource BodyTextStyle}"
+                                                  FontSize="13"
+                                                  Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
         </Grid>
     </Grid>
 </views:ModernWindowBase>
