@@ -354,6 +354,9 @@ namespace DriveSync.WPF.Localization
             SafeAddTranslation(englishTranslations, "DeletingOperation", "DELETING");
             SafeAddTranslation(englishTranslations, "CopyingOperation", "COPYING");
             SafeAddTranslation(englishTranslations, "ScanningForChanges", "Scanning for changes...");
+            SafeAddTranslation(englishTranslations, "skipping", "skipping...");
+            SafeAddTranslation(englishTranslations, "Copying", "Copying...");
+            SafeAddTranslation(englishTranslations, "Deleted", "Deleted...");
         }
 
         private void AddHungarianTranslations()
@@ -732,6 +735,9 @@ namespace DriveSync.WPF.Localization
             SafeAddTranslation(hungarianTranslations, "Calculating... van hátra", "Számítás... van hátra");
             SafeAddTranslation(hungarianTranslations, "Scanning for changes", "Változások keresése");
             SafeAddTranslation(hungarianTranslations, "Deleted", "Törölve");
+            SafeAddTranslation(hungarianTranslations, "skipping", "kihagyás...");
+            SafeAddTranslation(hungarianTranslations, "Copying", "Másolás...");
+            SafeAddTranslation(hungarianTranslations, "Deleted", "Törölve...");
 
 
         }

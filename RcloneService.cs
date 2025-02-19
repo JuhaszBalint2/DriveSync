@@ -124,10 +124,10 @@ namespace DriveSync.Infrastructure.Services
             var syncProgress = new SyncProgress
             {
                 PercentComplete = 0,
-                CurrentOperation = "INITIALIZING",
-                CurrentFile = "Starting sync operation...",
-                Speed = "0 B/s",
-                TimeRemaining = "Calculating..."
+                CurrentOperation = LocalizationManager.Instance["SyncInitializing"],
+                CurrentFile = LocalizationManager.Instance["PreparingToSync"],
+                Speed = LocalizationManager.Instance["ZeroSpeed"],
+                TimeRemaining = LocalizationManager.Instance["CalculatingProgress"]
             };
 
             var errorBuilder = new StringBuilder();
@@ -141,11 +141,12 @@ namespace DriveSync.Infrastructure.Services
                 _logger.LogDebug("rclone output: {line}", e.Data);
                 if (isFirstUpdate)
                 {
-                    syncProgress.CurrentOperation = "SCANNING";
-                    syncProgress.CurrentFile = "Scanning for changes...";
+                    syncProgress.CurrentOperation = LocalizationManager.Instance["ScanningOperation"];
+                    syncProgress.CurrentFile = LocalizationManager.Instance["ScanningForChanges"];
                     progress.Report(syncProgress);
                     isFirstUpdate = false;
                 }
+
                 ProcessProgressOutput(e.Data, syncProgress, progress);
             };
 
@@ -179,9 +180,9 @@ namespace DriveSync.Infrastructure.Services
                 }
 
                 syncProgress.PercentComplete = 100;
-                syncProgress.CurrentOperation = "COMPLETE";
-                syncProgress.CurrentFile = "Sync completed successfully";
-                syncProgress.Speed = "0 B/s";
+                syncProgress.CurrentOperation = LocalizationManager.Instance["SyncComplete"];
+                syncProgress.CurrentFile = LocalizationManager.Instance["SyncCompletedSuccess"];
+                syncProgress.Speed = LocalizationManager.Instance["ZeroSpeed"];
                 syncProgress.TimeRemaining = "-";
                 progress.Report(syncProgress);
 
@@ -298,7 +299,7 @@ namespace DriveSync.Infrastructure.Services
                         "COPYING" or "COPY" => OP_COPY,
                         "DELETING" or "DELETE" => OP_DELETE,
                         "SKIPPING" or "SKIP" => OP_SKIP,
-                        _ => progressObj.CurrentOperation
+                        _ => LocalizationManager.Instance["SyncOperation"]
                     };
                     if (op == OP_CHECK && line.IndexOf("Finish", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
@@ -331,7 +332,7 @@ namespace DriveSync.Infrastructure.Services
                     progressObj.PercentComplete = 100;
                     progressObj.Speed = LocalizationManager.Instance["ZeroSpeed"];
                     progressObj.TimeRemaining = "-";
-                    progressObj.CurrentOperation = "COMPLETE";
+                    progressObj.CurrentOperation = LocalizationManager.Instance["SyncComplete"];
                     progressObj.CurrentFile = LocalizationManager.Instance["NoFilesToTransfer"];
                     reporter?.Report(progressObj);
                 }

@@ -699,11 +699,11 @@ namespace DriveSync.WPF.ViewModels
                     // Update the operation display
                     CurrentSyncOperation = operationKey switch
                     {
-                        "CHECK" => LocalizationManager.Instance["CheckingFiles"],
-                        "COPY" => LocalizationManager.Instance["Copied"],
-                        "DELETE" => LocalizationManager.Instance["Deleted"],
-                        "SKIP" => LocalizationManager.Instance["Skipped"],
-                        "SCANNING" => LocalizationManager.Instance["ScanningForChanges"],
+                        "CHECK" => LocalizationManager.Instance["CheckOperation"],
+                        "COPY" => LocalizationManager.Instance["CopyOperation"],
+                        "DELETE" => LocalizationManager.Instance["DeleteOperation"],
+                        "SKIP" => LocalizationManager.Instance["SkipOperation"],
+                        "SCANNING" => LocalizationManager.Instance["ScanningOperation"],
                         _ => LocalizationManager.Instance["ScanningForChanges"]
                     };
 
