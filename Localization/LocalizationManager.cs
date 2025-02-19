@@ -354,9 +354,10 @@ namespace DriveSync.WPF.Localization
             SafeAddTranslation(englishTranslations, "DeletingOperation", "DELETING");
             SafeAddTranslation(englishTranslations, "CopyingOperation", "COPYING");
             SafeAddTranslation(englishTranslations, "ScanningForChanges", "Scanning for changes...");
-            SafeAddTranslation(englishTranslations, "skipping", "skipping...");
+            SafeAddTranslation(englishTranslations, "skipping", "Skipping...");
             SafeAddTranslation(englishTranslations, "Copying", "Copying...");
             SafeAddTranslation(englishTranslations, "Deleted", "Deleted...");
+            SafeAddTranslation(englishTranslations, "SkipOperation", "Skipping...");
         }
 
         private void AddHungarianTranslations()
@@ -728,16 +729,20 @@ namespace DriveSync.WPF.Localization
             SafeAddTranslation(hungarianTranslations, "TimeLeft", "{0} van hátra");
             SafeAddTranslation(hungarianTranslations, "TransferSpeed", "Átviteli sebesség");
             SafeAddTranslation(hungarianTranslations, "RemainingTime", "Hátralévő idő");
-            SafeAddTranslation(hungarianTranslations, "Skipping", "Kihagyás...");
             SafeAddTranslation(hungarianTranslations, "Copying", "Másolás...");
             SafeAddTranslation(hungarianTranslations, "ScanningForChanges", "változások keresése...");
             SafeAddTranslation(hungarianTranslations, "Calculating", "Számítás...");
             SafeAddTranslation(hungarianTranslations, "Calculating... van hátra", "Számítás... van hátra");
             SafeAddTranslation(hungarianTranslations, "Scanning for changes", "Változások keresése");
             SafeAddTranslation(hungarianTranslations, "Deleted", "Törölve");
-            SafeAddTranslation(hungarianTranslations, "skipping", "kihagyás...");
+            SafeAddTranslation(hungarianTranslations, "skipping", "Kihagyás...");
             SafeAddTranslation(hungarianTranslations, "Copying", "Másolás...");
             SafeAddTranslation(hungarianTranslations, "Deleted", "Törölve...");
+            SafeAddTranslation(hungarianTranslations, "SkipOperation", "Kihagyva...");
+
+            SafeAddTranslation(hungarianTranslations, "skipping", "Kihagyás...");
+            SafeAddTranslation(hungarianTranslations, "Skipping", "Kihagyás...");
+            SafeAddTranslation(hungarianTranslations, "SKIPPING", "Kihagyás...");
 
 
         }

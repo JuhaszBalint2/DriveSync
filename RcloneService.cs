@@ -293,6 +293,7 @@ namespace DriveSync.Infrastructure.Services
                 if (keywordMatch.Success)
                 {
                     string opRaw = keywordMatch.Groups[1].Value.ToUpper().Trim();
+                    _logger.LogDebug($"Raw Operation Token: {opRaw}"); // Added debug logging
                     string op = opRaw switch
                     {
                         "CHECKING" or "CHECK" => OP_CHECK,
@@ -301,6 +302,8 @@ namespace DriveSync.Infrastructure.Services
                         "SKIPPING" or "SKIP" => OP_SKIP,
                         _ => LocalizationManager.Instance["SyncOperation"]
                     };
+                    _logger.LogDebug($"Mapped Operation Code: {op}"); // Added debug logging
+
                     if (op == OP_CHECK && line.IndexOf("Finish", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         progressObj.CurrentOperation = LocalizationManager.Instance["FileVerificationCheck"];
@@ -314,9 +317,11 @@ namespace DriveSync.Infrastructure.Services
                             OP_CHECK => LocalizationManager.Instance["CheckOperation"],
                             OP_COPY => LocalizationManager.Instance["CopyOperation"],
                             OP_DELETE => LocalizationManager.Instance["DeleteOperation"],
-                            OP_SKIP => LocalizationManager.Instance["SkipOperation"],
+                            OP_SKIP => LocalizationManager.Instance["skipping"], // Changed to 'Skipping' with capital S
                             _ => LocalizationManager.Instance["SyncOperation"]
                         };
+
+                        _logger.LogDebug($"Final Operation Text: {progressObj.CurrentOperation}"); // Added debug logging
 
                         var tokens = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                         if (tokens.Length > 0)
@@ -343,4 +348,5 @@ namespace DriveSync.Infrastructure.Services
             }
         }
     }
-}
+    }
+
