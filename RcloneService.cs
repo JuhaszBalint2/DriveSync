@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using DriveSync.WPF.Localization;
 using Microsoft.Extensions.Logging;
 
 namespace DriveSync.Infrastructure.Services
@@ -301,12 +302,21 @@ namespace DriveSync.Infrastructure.Services
                     };
                     if (op == OP_CHECK && line.IndexOf("Finish", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
-                        progressObj.CurrentOperation = "File verification check: finished";
+                        progressObj.CurrentOperation = LocalizationManager.Instance["FileVerificationCheck"];
                         progressObj.CurrentFile = string.Empty;
                     }
                     else
                     {
-                        progressObj.CurrentOperation = op;
+                        // Map operation types to localized strings
+                        progressObj.CurrentOperation = op switch
+                        {
+                            OP_CHECK => LocalizationManager.Instance["CheckOperation"],
+                            OP_COPY => LocalizationManager.Instance["CopyOperation"],
+                            OP_DELETE => LocalizationManager.Instance["DeleteOperation"],
+                            OP_SKIP => LocalizationManager.Instance["SkipOperation"],
+                            _ => LocalizationManager.Instance["SyncOperation"]
+                        };
+
                         var tokens = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                         if (tokens.Length > 0)
                         {
@@ -319,10 +329,10 @@ namespace DriveSync.Infrastructure.Services
                 if (line.IndexOf("There was nothing to transfer", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     progressObj.PercentComplete = 100;
-                    progressObj.Speed = "0 B/s";
+                    progressObj.Speed = LocalizationManager.Instance["ZeroSpeed"];
                     progressObj.TimeRemaining = "-";
                     progressObj.CurrentOperation = "COMPLETE";
-                    progressObj.CurrentFile = "No files to transfer";
+                    progressObj.CurrentFile = LocalizationManager.Instance["NoFilesToTransfer"];
                     reporter?.Report(progressObj);
                 }
             }

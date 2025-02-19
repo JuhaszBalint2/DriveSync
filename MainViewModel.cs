@@ -695,34 +695,28 @@ namespace DriveSync.WPF.ViewModels
                 if (shouldUpdate)
                 {
                     string operationKey = progress.CurrentOperation?.ToUpper() ?? "SYNC";
-                    switch (operationKey)
+
+                    // Update the operation display
+                    CurrentSyncOperation = operationKey switch
                     {
-                        case "CHECK":
-                            StatusIndicatorBrush = ColorCheck;
-                            CurrentSyncOperation = LocalizationManager.Instance["CheckOperation"];
-                            break;
-                        case "COPY":
-                            StatusIndicatorBrush = ColorCopy;
-                            CurrentSyncOperation = LocalizationManager.Instance["CopyOperation"];
-                            break;
-                        case "DELETE":
-                            StatusIndicatorBrush = ColorDelete;
-                            CurrentSyncOperation = LocalizationManager.Instance["DeleteOperation"];
-                            break;
-                        case "SKIP":
-                            StatusIndicatorBrush = ColorSkip;
-                            CurrentSyncOperation = LocalizationManager.Instance["SkipOperation"];
-                            break;
-                        case "SCANNING":
-                            StatusIndicatorBrush = ColorScanning;
-                            CurrentFile = LocalizationManager.Instance["ScanningForChanges"];
-                            CurrentSyncOperation = LocalizationManager.Instance["ScanningOperation"];
-                            break;
-                        default:
-                            StatusIndicatorBrush = ColorCheck;
-                            CurrentSyncOperation = LocalizationManager.Instance["SyncOperation"];
-                            break;
-                    }
+                        "CHECK" => LocalizationManager.Instance["CheckingFiles"],
+                        "COPY" => LocalizationManager.Instance["Copied"],
+                        "DELETE" => LocalizationManager.Instance["Deleted"],
+                        "SKIP" => LocalizationManager.Instance["Skipped"],
+                        "SCANNING" => LocalizationManager.Instance["ScanningForChanges"],
+                        _ => LocalizationManager.Instance["ScanningForChanges"]
+                    };
+
+                    // Set the appropriate status color
+                    StatusIndicatorBrush = operationKey switch
+                    {
+                        "CHECK" => ColorCheck,
+                        "COPY" => ColorCopy,
+                        "DELETE" => ColorDelete,
+                        "SKIP" => ColorSkip,
+                        "SCANNING" => ColorScanning,
+                        _ => ColorCheck
+                    };
 
                     if (!string.IsNullOrWhiteSpace(progress.CurrentFile))
                     {
@@ -734,7 +728,7 @@ namespace DriveSync.WPF.ViewModels
                     {
                         ProgressValue = progress.PercentComplete;
                         ProgressPercentage = string.Format(
-                            LocalizationManager.Instance["ProgressPercentage"],
+                            LocalizationManager.Instance["PercentComplete"],
                             progress.PercentComplete.ToString("F1")
                         );
                         _lastReportedProgress = progress.PercentComplete;
@@ -746,8 +740,8 @@ namespace DriveSync.WPF.ViewModels
                         : LocalizationManager.Instance["ZeroSpeed"];
 
                     RemainingTime = !string.IsNullOrWhiteSpace(progress.TimeRemaining)
-                        ? progress.TimeRemaining
-                        : LocalizationManager.Instance["CalculatingTime"];
+                        ? string.Format(LocalizationManager.Instance["TimeLeft"], progress.TimeRemaining)
+                        : LocalizationManager.Instance["Calculating"];
                 }
             }
             catch (Exception ex)

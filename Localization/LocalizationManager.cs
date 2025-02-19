@@ -336,14 +336,24 @@ namespace DriveSync.WPF.Localization
             SafeAddTranslation(englishTranslations, "SyncCancelled", "Sync operation cancelled.");
             SafeAddTranslation(englishTranslations, "SyncFailed", "Sync failed: {0}");
             SafeAddTranslation(englishTranslations, "CalculatingProgress", "Calculating...");
+            SafeAddTranslation(englishTranslations, "CalculatingTime", "Calculating time...");
             SafeAddTranslation(englishTranslations, "ZeroSpeed", "0 B/s");
             SafeAddTranslation(englishTranslations, "InvalidSourceTarget", "Please select valid source and target settings.");
-
-            SafeAddTranslation(englishTranslations, "ScanningForChanges", "Scanning for changes...");
-            SafeAddTranslation(englishTranslations, "CalculatingTime", "Calculating...");
-            SafeAddTranslation(englishTranslations, "InitializingOperation", "INITIALIZING");
+            SafeAddTranslation(englishTranslations, "WaitingForSync", "Waiting for sync...");
+            SafeAddTranslation(englishTranslations, "TransferSpeed", "Transfer Speed");
+            SafeAddTranslation(englishTranslations, "TimeRemaining", "Time Remaining");
+            SafeAddTranslation(englishTranslations, "CheckOperation", "Checking files");
+            SafeAddTranslation(englishTranslations, "CopyOperation", "Copying files");
+            SafeAddTranslation(englishTranslations, "DeleteOperation", "Deleting files");
+            SafeAddTranslation(englishTranslations, "SkipOperation", "Skipping files");
+            SafeAddTranslation(englishTranslations, "FileVerificationCheck", "File verification check: {0}");
+            SafeAddTranslation(englishTranslations, "NoFilesToTransfer", "No files to transfer");
             SafeAddTranslation(englishTranslations, "ScanningOperation", "SCANNING");
             SafeAddTranslation(englishTranslations, "SyncOperation", "SYNC");
+            SafeAddTranslation(englishTranslations, "SkippingOperation", "SKIPPING");
+            SafeAddTranslation(englishTranslations, "DeletingOperation", "DELETING");
+            SafeAddTranslation(englishTranslations, "CopyingOperation", "COPYING");
+            SafeAddTranslation(englishTranslations, "ScanningForChanges", "Scanning for changes...");
         }
 
         private void AddHungarianTranslations()
@@ -673,6 +683,7 @@ namespace DriveSync.WPF.Localization
             SafeAddTranslation(hungarianTranslations, "SyncHistory", "Szinkronizálási előzmények");
             SafeAddTranslation(hungarianTranslations, "NoSyncHistoryAvailable", "Nincs szinkronizálási előzmény.");
 
+            // Progress text
             SafeAddTranslation(hungarianTranslations, "ProgressPercentage", "{0}% kész");
             SafeAddTranslation(hungarianTranslations, "StartingSync", "Szinkronizálás indítása...");
             SafeAddTranslation(hungarianTranslations, "PreparingToSync", "Szinkronizálás előkészítése...");
@@ -682,14 +693,38 @@ namespace DriveSync.WPF.Localization
             SafeAddTranslation(hungarianTranslations, "SyncCancelled", "Szinkronizálás megszakítva.");
             SafeAddTranslation(hungarianTranslations, "SyncFailed", "Szinkronizálás sikertelen: {0}");
             SafeAddTranslation(hungarianTranslations, "CalculatingProgress", "Számítás...");
+            SafeAddTranslation(hungarianTranslations, "CalculatingTime", "Idő számítása...");
             SafeAddTranslation(hungarianTranslations, "ZeroSpeed", "0 B/s");
             SafeAddTranslation(hungarianTranslations, "InvalidSourceTarget", "Kérem válasszon érvényes forrást és célt.");
-
-            SafeAddTranslation(hungarianTranslations, "ScanningForChanges", "Változások keresése...");
-            SafeAddTranslation(hungarianTranslations, "CalculatingTime", "Számítás...");
-            SafeAddTranslation(hungarianTranslations, "InitializingOperation", "ELŐKÉSZÍTÉS");
+            SafeAddTranslation(hungarianTranslations, "WaitingForSync", "Várakozás szinkronizálásra...");
+            SafeAddTranslation(hungarianTranslations, "TransferSpeed", "Átviteli Sebesség");
+            SafeAddTranslation(hungarianTranslations, "TimeRemaining", "Hátralévő Idő");
+            SafeAddTranslation(hungarianTranslations, "CheckOperation", "Fájlok ellenőrzése");
+            SafeAddTranslation(hungarianTranslations, "CopyOperation", "Fájlok másolása");
+            SafeAddTranslation(hungarianTranslations, "DeleteOperation", "Fájlok törlése");
+            SafeAddTranslation(hungarianTranslations, "SkipOperation", "Fájlok kihagyása");
+            SafeAddTranslation(hungarianTranslations, "FileVerificationCheck", "Fájl ellenőrzés: {0}");
+            SafeAddTranslation(hungarianTranslations, "NoFilesToTransfer", "Nincs átvitelre váró fájl");
             SafeAddTranslation(hungarianTranslations, "ScanningOperation", "KERESÉS");
             SafeAddTranslation(hungarianTranslations, "SyncOperation", "SZINKRONIZÁLÁS");
+            SafeAddTranslation(hungarianTranslations, "SkippingOperation", "KIHAGYÁS");
+            SafeAddTranslation(hungarianTranslations, "DeletingOperation", "TÖRLÉS");
+            SafeAddTranslation(hungarianTranslations, "CopyingOperation", "MÁSOLÁS");
+            SafeAddTranslation(hungarianTranslations, "ScanningForChanges", "Változások keresése...");
+            SafeAddTranslation(hungarianTranslations, "ScanningForChanges", "Változások keresése...");
+            SafeAddTranslation(hungarianTranslations, "Calculating", "Számítás...");
+            SafeAddTranslation(hungarianTranslations, "CalculatingTime", "Idő számítása...");
+            SafeAddTranslation(hungarianTranslations, "Deleted", "Törölve...");
+            SafeAddTranslation(hungarianTranslations, "Copied", "Másolva...");
+            SafeAddTranslation(hungarianTranslations, "Skipped", "Kihagyva...");
+            SafeAddTranslation(hungarianTranslations, "CheckingFiles", "Fájlok ellenőrzése...");
+            SafeAddTranslation(hungarianTranslations, "SyncComplete", "Szinkronizálás kész");
+            SafeAddTranslation(hungarianTranslations, "Ready", "Kész");
+            SafeAddTranslation(hungarianTranslations, "PercentComplete", "{0}% kész");
+            SafeAddTranslation(hungarianTranslations, "ProcessedItem", "{0} feldolgozva");
+            SafeAddTranslation(hungarianTranslations, "TimeLeft", "{0} van hátra");
+            SafeAddTranslation(hungarianTranslations, "TransferSpeed", "Átviteli sebesség");
+            SafeAddTranslation(hungarianTranslations, "RemainingTime", "Hátralévő idő");
 
         }
 

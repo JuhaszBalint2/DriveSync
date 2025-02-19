@@ -258,7 +258,7 @@
                                 DockPanel.Dock="Left">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding DisplayName}"
+                                    <TextBlock Text="{Binding DisplayName, Converter={StaticResource LocalizationConverter}}"
                                              FontSize="13"/>
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
@@ -274,7 +274,7 @@
                             Padding="16">
                         <Grid>
                             <!-- Waiting for sync message -->
-                            <TextBlock Text="Waiting for sync..."
+                            <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[WaitingForSync]}"
                                       Style="{DynamicResource BodyTextStyle}"
                                       FontSize="13"
                                       HorizontalAlignment="Center"
@@ -309,11 +309,11 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
-                                    <TextBlock Text="{Binding ProgressPercentage, StringFormat='{}{0} complete'}"
+                                    <TextBlock Text="{Binding ProgressPercentage}"
                                               Style="{DynamicResource BodyTextStyle}"
                                               FontSize="13"
                                               HorizontalAlignment="Right"
-                                               Margin="0,0,0,4"/>
+                                              Margin="0,0,0,4"/>
 
                                     <Border Grid.Row="1" 
                                             Background="{DynamicResource BackgroundBrush}"
@@ -382,7 +382,8 @@
                                               Width="12"
                                               Height="12"
                                               Margin="0,0,8,0"
-                                              VerticalAlignment="Center"/>
+                                              VerticalAlignment="Center"
+                                              ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[TransferSpeed]}"/>
                                         <TextBlock Text="{Binding CurrentSpeed}"
                                                   Style="{DynamicResource BodyTextStyle}"
                                                   FontSize="13"
@@ -394,7 +395,8 @@
                                               Width="12"
                                               Height="12"
                                               Margin="0,0,8,0"
-                                              VerticalAlignment="Center"/>
+                                              VerticalAlignment="Center"
+                                              ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[TimeRemaining]}"/>
                                         <TextBlock Text="{Binding RemainingTime}"
                                                   Style="{DynamicResource BodyTextStyle}"
                                                   FontSize="13"
