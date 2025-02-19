@@ -514,7 +514,7 @@ namespace DriveSync.WPF.ViewModels
             }
             if (!IsValid)
             {
-                StatusMessage = "Please select valid source and target settings.";
+                StatusMessage = LocalizationManager.Instance["InvalidSourceTarget"];
                 StatusIndicatorBrush = ColorDelete;
                 return;
             }
@@ -522,13 +522,13 @@ namespace DriveSync.WPF.ViewModels
             try
             {
                 IsSyncing = true;
-                StatusMessage = "Starting sync...";
+                StatusMessage = LocalizationManager.Instance["StartingSync"];
                 ProgressValue = 0;
-                ProgressPercentage = "0%";
-                CurrentSpeed = "0 B/s";
-                RemainingTime = "Calculating...";
-                CurrentFile = "Preparing to sync...";
-                CurrentSyncOperation = "INITIALIZING";
+                ProgressPercentage = string.Format(LocalizationManager.Instance["ProgressPercentage"], "0");
+                CurrentSpeed = LocalizationManager.Instance["ZeroSpeed"];
+                RemainingTime = LocalizationManager.Instance["CalculatingProgress"];
+                CurrentFile = LocalizationManager.Instance["PreparingToSync"];
+                CurrentSyncOperation = LocalizationManager.Instance["SyncInitializing"];
                 StatusIndicatorBrush = ColorScanning;
                 _lastReportedProgress = 0;
 
@@ -558,20 +558,20 @@ namespace DriveSync.WPF.ViewModels
                 SaveHistory();
 
                 ProgressValue = 100;
-                ProgressPercentage = "100%";
-                CurrentFile = "Sync completed";
-                StatusMessage = "Sync completed successfully";
+                ProgressPercentage = string.Format(LocalizationManager.Instance["ProgressPercentage"], "100");
+                CurrentFile = LocalizationManager.Instance["SyncCompleted"];
+                StatusMessage = LocalizationManager.Instance["SyncCompletedSuccess"];
                 StatusIndicatorBrush = ColorCheck;
             }
             catch (OperationCanceledException)
             {
-                StatusMessage = "Sync operation cancelled.";
+                StatusMessage = LocalizationManager.Instance["SyncCancelled"];
                 StatusIndicatorBrush = ColorSkip;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Sync failed");
-                StatusMessage = $"Sync failed: {ex.Message}";
+                StatusMessage = string.Format(LocalizationManager.Instance["SyncFailed"], ex.Message);
                 StatusIndicatorBrush = ColorDelete;
             }
             finally
@@ -694,15 +694,34 @@ namespace DriveSync.WPF.ViewModels
 
                 if (shouldUpdate)
                 {
-                    CurrentSyncOperation = progress.CurrentOperation?.ToUpper() ?? "SYNC";
-                    switch (CurrentSyncOperation)
+                    string operationKey = progress.CurrentOperation?.ToUpper() ?? "SYNC";
+                    switch (operationKey)
                     {
-                        case "CHECK": StatusIndicatorBrush = ColorCheck; break;
-                        case "COPY": StatusIndicatorBrush = ColorCopy; break;
-                        case "DELETE": StatusIndicatorBrush = ColorDelete; break;
-                        case "SKIP": StatusIndicatorBrush = ColorSkip; break;
-                        case "SCANNING": StatusIndicatorBrush = ColorScanning; break;
-                        default: StatusIndicatorBrush = ColorCheck; break;
+                        case "CHECK":
+                            StatusIndicatorBrush = ColorCheck;
+                            CurrentSyncOperation = LocalizationManager.Instance["CheckOperation"];
+                            break;
+                        case "COPY":
+                            StatusIndicatorBrush = ColorCopy;
+                            CurrentSyncOperation = LocalizationManager.Instance["CopyOperation"];
+                            break;
+                        case "DELETE":
+                            StatusIndicatorBrush = ColorDelete;
+                            CurrentSyncOperation = LocalizationManager.Instance["DeleteOperation"];
+                            break;
+                        case "SKIP":
+                            StatusIndicatorBrush = ColorSkip;
+                            CurrentSyncOperation = LocalizationManager.Instance["SkipOperation"];
+                            break;
+                        case "SCANNING":
+                            StatusIndicatorBrush = ColorScanning;
+                            CurrentFile = LocalizationManager.Instance["ScanningForChanges"];
+                            CurrentSyncOperation = LocalizationManager.Instance["ScanningOperation"];
+                            break;
+                        default:
+                            StatusIndicatorBrush = ColorCheck;
+                            CurrentSyncOperation = LocalizationManager.Instance["SyncOperation"];
+                            break;
                     }
 
                     if (!string.IsNullOrWhiteSpace(progress.CurrentFile))
@@ -714,13 +733,21 @@ namespace DriveSync.WPF.ViewModels
                     if (progress.PercentComplete >= 0 && progress.PercentComplete <= 100)
                     {
                         ProgressValue = progress.PercentComplete;
-                        ProgressPercentage = $"{progress.PercentComplete:F1}%";
+                        ProgressPercentage = string.Format(
+                            LocalizationManager.Instance["ProgressPercentage"],
+                            progress.PercentComplete.ToString("F1")
+                        );
                         _lastReportedProgress = progress.PercentComplete;
                         _lastProgressUpdateTime = now;
                     }
 
-                    CurrentSpeed = !string.IsNullOrWhiteSpace(progress.Speed) ? progress.Speed : "0 B/s";
-                    RemainingTime = !string.IsNullOrWhiteSpace(progress.TimeRemaining) ? progress.TimeRemaining : "Calculating...";
+                    CurrentSpeed = !string.IsNullOrWhiteSpace(progress.Speed)
+                        ? progress.Speed
+                        : LocalizationManager.Instance["ZeroSpeed"];
+
+                    RemainingTime = !string.IsNullOrWhiteSpace(progress.TimeRemaining)
+                        ? progress.TimeRemaining
+                        : LocalizationManager.Instance["CalculatingTime"];
                 }
             }
             catch (Exception ex)

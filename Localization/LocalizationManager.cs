@@ -327,8 +327,23 @@ namespace DriveSync.WPF.Localization
             SafeAddTranslation(englishTranslations, "SyncHistory", "Sync History");
             SafeAddTranslation(englishTranslations, "NoSyncHistoryAvailable", "No sync history available.");
 
+            SafeAddTranslation(englishTranslations, "ProgressPercentage", "{0}% complete");
+            SafeAddTranslation(englishTranslations, "StartingSync", "Starting sync...");
+            SafeAddTranslation(englishTranslations, "PreparingToSync", "Preparing to sync...");
+            SafeAddTranslation(englishTranslations, "SyncInitializing", "INITIALIZING");
+            SafeAddTranslation(englishTranslations, "SyncCompleted", "Sync completed");
+            SafeAddTranslation(englishTranslations, "SyncCompletedSuccess", "Sync completed successfully");
+            SafeAddTranslation(englishTranslations, "SyncCancelled", "Sync operation cancelled.");
+            SafeAddTranslation(englishTranslations, "SyncFailed", "Sync failed: {0}");
+            SafeAddTranslation(englishTranslations, "CalculatingProgress", "Calculating...");
+            SafeAddTranslation(englishTranslations, "ZeroSpeed", "0 B/s");
+            SafeAddTranslation(englishTranslations, "InvalidSourceTarget", "Please select valid source and target settings.");
 
-
+            SafeAddTranslation(englishTranslations, "ScanningForChanges", "Scanning for changes...");
+            SafeAddTranslation(englishTranslations, "CalculatingTime", "Calculating...");
+            SafeAddTranslation(englishTranslations, "InitializingOperation", "INITIALIZING");
+            SafeAddTranslation(englishTranslations, "ScanningOperation", "SCANNING");
+            SafeAddTranslation(englishTranslations, "SyncOperation", "SYNC");
         }
 
         private void AddHungarianTranslations()
@@ -658,6 +673,23 @@ namespace DriveSync.WPF.Localization
             SafeAddTranslation(hungarianTranslations, "SyncHistory", "Szinkronizálási előzmények");
             SafeAddTranslation(hungarianTranslations, "NoSyncHistoryAvailable", "Nincs szinkronizálási előzmény.");
 
+            SafeAddTranslation(hungarianTranslations, "ProgressPercentage", "{0}% kész");
+            SafeAddTranslation(hungarianTranslations, "StartingSync", "Szinkronizálás indítása...");
+            SafeAddTranslation(hungarianTranslations, "PreparingToSync", "Szinkronizálás előkészítése...");
+            SafeAddTranslation(hungarianTranslations, "SyncInitializing", "ELŐKÉSZÍTÉS");
+            SafeAddTranslation(hungarianTranslations, "SyncCompleted", "Szinkronizálás befejezve");
+            SafeAddTranslation(hungarianTranslations, "SyncCompletedSuccess", "A szinkronizálás sikeresen befejeződött");
+            SafeAddTranslation(hungarianTranslations, "SyncCancelled", "Szinkronizálás megszakítva.");
+            SafeAddTranslation(hungarianTranslations, "SyncFailed", "Szinkronizálás sikertelen: {0}");
+            SafeAddTranslation(hungarianTranslations, "CalculatingProgress", "Számítás...");
+            SafeAddTranslation(hungarianTranslations, "ZeroSpeed", "0 B/s");
+            SafeAddTranslation(hungarianTranslations, "InvalidSourceTarget", "Kérem válasszon érvényes forrást és célt.");
+
+            SafeAddTranslation(hungarianTranslations, "ScanningForChanges", "Változások keresése...");
+            SafeAddTranslation(hungarianTranslations, "CalculatingTime", "Számítás...");
+            SafeAddTranslation(hungarianTranslations, "InitializingOperation", "ELŐKÉSZÍTÉS");
+            SafeAddTranslation(hungarianTranslations, "ScanningOperation", "KERESÉS");
+            SafeAddTranslation(hungarianTranslations, "SyncOperation", "SZINKRONIZÁLÁS");
 
         }
 
