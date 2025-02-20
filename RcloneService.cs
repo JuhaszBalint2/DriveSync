@@ -258,11 +258,34 @@ namespace DriveSync.Infrastructure.Services
                 _logger.LogDebug("=== START PROCESSING LINE ===");
                 _logger.LogDebug("Raw input line: {line}", line);
 
+                // Specific file operation handling
+                var fileOperationRegex = new Regex(@"(?:(\w+):\s*)?(.+?):\s*(Deleted|Copied|Skipped)");
+                var fileOperationMatch = fileOperationRegex.Match(line);
+                if (fileOperationMatch.Success)
+                {
+                    string operation = fileOperationMatch.Groups[3].Value.ToLower();
+                    string filename = fileOperationMatch.Groups[2].Value.Trim();
+
+                    progressObj.CurrentOperation = operation switch
+                    {
+                        "deleted" => LocalizationManager.Instance["DeleteOperation"],
+                        "copied" => LocalizationManager.Instance["CopyOperation"],
+                        "skipped" => LocalizationManager.Instance["SkipOperation"],
+                        _ => LocalizationManager.Instance["SyncOperation"]
+                    };
+
+                    progressObj.CurrentFile = $"{LocalizationManager.Instance["FileDeleted"]} {filename}";
+                    _logger.LogDebug("File Operation: {operation}, File: {filename}", operation, filename);
+                    reporter?.Report(progressObj);
+                    return;
+                }
+
                 // Percentage extraction
                 var percentRegex = new Regex(@"(?i)(\d+(?:\.\d+)?)\s*%");
                 var percentMatch = percentRegex.Match(line);
                 if (percentMatch.Success && double.TryParse(percentMatch.Groups[1].Value, out double percent))
                 {
+                    // Use a more nuanced approach to progress calculation
                     progressObj.PercentComplete = Math.Min(100, Math.Max(0, percent));
                     _logger.LogDebug("Progress Update - Percentage: {percent}%", percent);
                     reporter?.Report(progressObj);
@@ -292,70 +315,17 @@ namespace DriveSync.Infrastructure.Services
                     }
                 }
 
-                // Operation detection
-                var keywordRegex = new Regex(@"(?i)(CHECKING|CHECK|COPYING|COPY|DELETING|DELETE|SKIPPING|SKIP)");
-                var keywordMatch = keywordRegex.Match(line);
-                if (keywordMatch.Success)
+                // Sync completion detection
+                if (line.Contains("Transferred") && line.Contains("Checked") && line.Contains("Copied"))
                 {
-                    string opRaw = keywordMatch.Groups[1].Value.ToUpper().Trim();
-                    _logger.LogDebug("Detected Operation Raw: {opRaw}", opRaw);
-
-                    string op = opRaw switch
-                    {
-                        "CHECKING" or "CHECK" => OP_CHECK,
-                        "COPYING" or "COPY" => OP_COPY,
-                        "DELETING" or "DELETE" => OP_DELETE,
-                        "SKIPPING" or "SKIP" => OP_SKIP,
-                        _ => LocalizationManager.Instance["SyncOperation"]
-                    };
-                    _logger.LogDebug("Mapped to Operation Code: {op}", op);
-
-                    if (op == OP_CHECK && line.IndexOf("Finish", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        progressObj.CurrentOperation = LocalizationManager.Instance["FileVerificationCheck"];
-                        progressObj.CurrentFile = string.Empty;
-                        _logger.LogDebug("Set File Verification Check Operation: {operation}", progressObj.CurrentOperation);
-                    }
-                    else if (line.Contains("Scanning", StringComparison.OrdinalIgnoreCase))
-                    {
-                        progressObj.CurrentOperation = LocalizationManager.Instance["ScanningOperation"];
-                        progressObj.CurrentFile = LocalizationManager.Instance["ScanningForChanges"];
-                        _logger.LogDebug("Set Scanning Operation: {operation}, File: {file}",
-                            progressObj.CurrentOperation, progressObj.CurrentFile);
-                    }
-                    else
-                    {
-                        string translatedOperation = op switch
-                        {
-                            OP_CHECK => LocalizationManager.Instance["CheckOperation"],
-                            OP_COPY => LocalizationManager.Instance["CopyOperation"],
-                            OP_DELETE => LocalizationManager.Instance["DeleteOperation"],
-                            OP_SKIP => LocalizationManager.Instance["SkippingOperation"],
-                            _ => LocalizationManager.Instance["SyncOperation"]
-                        };
-                        _logger.LogDebug("Translated Operation: {operation} for op: {op}", translatedOperation, op);
-                        progressObj.CurrentOperation = translatedOperation;
-
-                        var tokens = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                        if (tokens.Length > 0)
-                        {
-                            if (op == OP_SKIP)
-                            {
-                                progressObj.CurrentOperation = LocalizationManager.Instance["SkippingOperation"];
-                                progressObj.CurrentFile = "";
-                                _logger.LogDebug("Skip Operation - Cleared file, Operation: {operation}",
-                                    progressObj.CurrentOperation);
-                            }
-                            else
-                            {
-                                progressObj.CurrentFile = tokens[tokens.Length - 1];
-                                _logger.LogDebug("Set Current File: {file}", progressObj.CurrentFile);
-                            }
-                        }
-                    }
-                    _logger.LogDebug("Final Operation State - Operation: {operation}, File: {file}",
-                        progressObj.CurrentOperation, progressObj.CurrentFile);
+                    _logger.LogDebug("Sync operation completion detected");
+                    progressObj.PercentComplete = 100;
+                    progressObj.CurrentOperation = LocalizationManager.Instance["SyncComplete"];
+                    progressObj.CurrentFile = LocalizationManager.Instance["SyncCompletedSuccess"];
+                    progressObj.Speed = LocalizationManager.Instance["ZeroSpeed"];
+                    progressObj.TimeRemaining = "-";
                     reporter?.Report(progressObj);
+                    return;
                 }
 
                 // Nothing to transfer check
@@ -371,7 +341,6 @@ namespace DriveSync.Infrastructure.Services
                 }
 
                 _logger.LogDebug("=== END PROCESSING LINE ===\n");
-
             }
             catch (Exception ex)
             {
@@ -380,5 +349,7 @@ namespace DriveSync.Infrastructure.Services
         }
     }
     }
+    
+    
     
 
