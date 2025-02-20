@@ -735,16 +735,15 @@ namespace DriveSync.WPF.Localization
             SafeAddTranslation(hungarianTranslations, "Calculating... van hátra", "Számítás... van hátra");
             SafeAddTranslation(hungarianTranslations, "Scanning for changes", "Változások keresése");
             SafeAddTranslation(hungarianTranslations, "Deleted", "Törölve");
-            SafeAddTranslation(hungarianTranslations, "skipping", "Kihagyás...");
             SafeAddTranslation(hungarianTranslations, "Copying", "Másolás...");
             SafeAddTranslation(hungarianTranslations, "Deleted", "Törölve...");
             SafeAddTranslation(hungarianTranslations, "SkipOperation", "Kihagyva...");
 
+            SafeAddTranslation(hungarianTranslations, "SkippingOperation", "Kihagyás...");
+            // Ensure all variations are covered
             SafeAddTranslation(hungarianTranslations, "skipping", "Kihagyás...");
             SafeAddTranslation(hungarianTranslations, "Skipping", "Kihagyás...");
             SafeAddTranslation(hungarianTranslations, "SKIPPING", "Kihagyás...");
-
-
         }
 
         public string GetString(string key)

@@ -255,17 +255,20 @@ namespace DriveSync.Infrastructure.Services
             {
                 if (string.IsNullOrWhiteSpace(line))
                     return;
-                _logger.LogDebug("Processing line: {line}", line);
-                // Simplified percentage extraction.
+                _logger.LogDebug("=== START PROCESSING LINE ===");
+                _logger.LogDebug("Raw input line: {line}", line);
+
+                // Percentage extraction
                 var percentRegex = new Regex(@"(?i)(\d+(?:\.\d+)?)\s*%");
                 var percentMatch = percentRegex.Match(line);
                 if (percentMatch.Success && double.TryParse(percentMatch.Groups[1].Value, out double percent))
                 {
                     progressObj.PercentComplete = Math.Min(100, Math.Max(0, percent));
-                    _logger.LogDebug("Parsed percent: {percent}%", percent);
+                    _logger.LogDebug("Progress Update - Percentage: {percent}%", percent);
                     reporter?.Report(progressObj);
                 }
-                // Capture speed and ETA.
+
+                // Speed and ETA capture
                 var statsRegex = new Regex(@"(?:Transferred:.*?\s+)?\(*\s*([\d\.]+\s*\w+/s)\s*\)?(?:.*ETA[:\s]*([\dhms]+))?", RegexOptions.IgnoreCase);
                 var statsMatch = statsRegex.Match(line);
                 if (statsMatch.Success)
@@ -274,26 +277,29 @@ namespace DriveSync.Infrastructure.Services
                     if (statsMatch.Groups[1].Success && !string.IsNullOrWhiteSpace(statsMatch.Groups[1].Value))
                     {
                         progressObj.Speed = statsMatch.Groups[1].Value.Trim();
+                        _logger.LogDebug("Speed Updated: {speed}", progressObj.Speed);
                         statsUpdated = true;
                     }
                     if (statsMatch.Groups[2].Success && !string.IsNullOrWhiteSpace(statsMatch.Groups[2].Value))
                     {
                         progressObj.TimeRemaining = statsMatch.Groups[2].Value.Trim();
+                        _logger.LogDebug("Time Remaining Updated: {timeRemaining}", progressObj.TimeRemaining);
                         statsUpdated = true;
                     }
                     if (statsUpdated)
                     {
-                        _logger.LogDebug("Parsed speed: {speed}, ETA: {eta}", progressObj.Speed, progressObj.TimeRemaining);
                         reporter?.Report(progressObj);
                     }
                 }
-                // Fallback for file-level operations.
+
+                // Operation detection
                 var keywordRegex = new Regex(@"(?i)(CHECKING|CHECK|COPYING|COPY|DELETING|DELETE|SKIPPING|SKIP)");
                 var keywordMatch = keywordRegex.Match(line);
                 if (keywordMatch.Success)
                 {
                     string opRaw = keywordMatch.Groups[1].Value.ToUpper().Trim();
-                    _logger.LogDebug($"Raw Operation Token: {opRaw}"); // Added debug logging
+                    _logger.LogDebug("Detected Operation Raw: {opRaw}", opRaw);
+
                     string op = opRaw switch
                     {
                         "CHECKING" or "CHECK" => OP_CHECK,
@@ -302,38 +308,60 @@ namespace DriveSync.Infrastructure.Services
                         "SKIPPING" or "SKIP" => OP_SKIP,
                         _ => LocalizationManager.Instance["SyncOperation"]
                     };
-                    _logger.LogDebug($"Mapped Operation Code: {op}"); // Added debug logging
+                    _logger.LogDebug("Mapped to Operation Code: {op}", op);
 
                     if (op == OP_CHECK && line.IndexOf("Finish", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
                         progressObj.CurrentOperation = LocalizationManager.Instance["FileVerificationCheck"];
                         progressObj.CurrentFile = string.Empty;
+                        _logger.LogDebug("Set File Verification Check Operation: {operation}", progressObj.CurrentOperation);
+                    }
+                    else if (line.Contains("Scanning", StringComparison.OrdinalIgnoreCase))
+                    {
+                        progressObj.CurrentOperation = LocalizationManager.Instance["ScanningOperation"];
+                        progressObj.CurrentFile = LocalizationManager.Instance["ScanningForChanges"];
+                        _logger.LogDebug("Set Scanning Operation: {operation}, File: {file}",
+                            progressObj.CurrentOperation, progressObj.CurrentFile);
                     }
                     else
                     {
-                        // Map operation types to localized strings
-                        progressObj.CurrentOperation = op switch
+                        string translatedOperation = op switch
                         {
                             OP_CHECK => LocalizationManager.Instance["CheckOperation"],
                             OP_COPY => LocalizationManager.Instance["CopyOperation"],
                             OP_DELETE => LocalizationManager.Instance["DeleteOperation"],
-                            OP_SKIP => LocalizationManager.Instance["skipping"], // Changed to 'Skipping' with capital S
+                            OP_SKIP => LocalizationManager.Instance["SkippingOperation"],
                             _ => LocalizationManager.Instance["SyncOperation"]
                         };
-
-                        _logger.LogDebug($"Final Operation Text: {progressObj.CurrentOperation}"); // Added debug logging
+                        _logger.LogDebug("Translated Operation: {operation} for op: {op}", translatedOperation, op);
+                        progressObj.CurrentOperation = translatedOperation;
 
                         var tokens = line.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                         if (tokens.Length > 0)
                         {
-                            progressObj.CurrentFile = tokens[tokens.Length - 1];
+                            if (op == OP_SKIP)
+                            {
+                                progressObj.CurrentOperation = LocalizationManager.Instance["SkippingOperation"];
+                                progressObj.CurrentFile = "";
+                                _logger.LogDebug("Skip Operation - Cleared file, Operation: {operation}",
+                                    progressObj.CurrentOperation);
+                            }
+                            else
+                            {
+                                progressObj.CurrentFile = tokens[tokens.Length - 1];
+                                _logger.LogDebug("Set Current File: {file}", progressObj.CurrentFile);
+                            }
                         }
                     }
-                    _logger.LogDebug("Parsed file-level op: {op} on file {filePart}", progressObj.CurrentOperation, progressObj.CurrentFile);
+                    _logger.LogDebug("Final Operation State - Operation: {operation}, File: {file}",
+                        progressObj.CurrentOperation, progressObj.CurrentFile);
                     reporter?.Report(progressObj);
                 }
+
+                // Nothing to transfer check
                 if (line.IndexOf("There was nothing to transfer", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
+                    _logger.LogDebug("Nothing to transfer detected - Updating progress to complete");
                     progressObj.PercentComplete = 100;
                     progressObj.Speed = LocalizationManager.Instance["ZeroSpeed"];
                     progressObj.TimeRemaining = "-";
@@ -341,6 +369,9 @@ namespace DriveSync.Infrastructure.Services
                     progressObj.CurrentFile = LocalizationManager.Instance["NoFilesToTransfer"];
                     reporter?.Report(progressObj);
                 }
+
+                _logger.LogDebug("=== END PROCESSING LINE ===\n");
+
             }
             catch (Exception ex)
             {
@@ -349,4 +380,5 @@ namespace DriveSync.Infrastructure.Services
         }
     }
     }
+    
 
