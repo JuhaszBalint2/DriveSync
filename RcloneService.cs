@@ -29,6 +29,8 @@ namespace DriveSync.Infrastructure.Services
         private const string OP_DELETE = "DELETE";
         private const string OP_SKIP = "SKIP";
 
+
+
         public RcloneService(ILogger<RcloneService> logger)
         {
             _logger = logger;
@@ -259,23 +261,30 @@ namespace DriveSync.Infrastructure.Services
                 _logger.LogDebug("Raw input line: {line}", line);
 
                 // Specific file operation handling
-                var fileOperationRegex = new Regex(@"(?:(\w+):\s*)?(.+?):\s*(Deleted|Copied|Skipped)");
+                var fileOperationRegex = new Regex(@"(\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})\s+INFO\s+:\s+(.+?):\s*(Added|Deleted|Copied|Skipped|Created|Modified)");
                 var fileOperationMatch = fileOperationRegex.Match(line);
                 if (fileOperationMatch.Success)
                 {
-                    string operation = fileOperationMatch.Groups[3].Value.ToLower();
+                    string timestamp = fileOperationMatch.Groups[1].Value;
                     string filename = fileOperationMatch.Groups[2].Value.Trim();
+                    string operation = fileOperationMatch.Groups[3].Value.ToUpper();
 
-                    progressObj.CurrentOperation = operation switch
+                    string localizedOperation = operation switch
                     {
-                        "deleted" => LocalizationManager.Instance["DeleteOperation"],
-                        "copied" => LocalizationManager.Instance["CopyOperation"],
-                        "skipped" => LocalizationManager.Instance["SkipOperation"],
+                        "DELETED" => LocalizationManager.Instance["DeleteOperation"],
+                        "COPIED" => LocalizationManager.Instance["CopyOperation"],
+                        "ADDED" => LocalizationManager.Instance["CopyOperation"],
+                        "CREATED" => LocalizationManager.Instance["CopyOperation"],
+                        "MODIFIED" => LocalizationManager.Instance["CopyOperation"],
+                        "SKIPPED" => LocalizationManager.Instance["SkipOperation"],
                         _ => LocalizationManager.Instance["SyncOperation"]
                     };
 
-                    progressObj.CurrentFile = $"{LocalizationManager.Instance["FileDeleted"]} {filename}";
-                    _logger.LogDebug("File Operation: {operation}, File: {filename}", operation, filename);
+                    progressObj.CurrentOperation = localizedOperation;
+                    var currentOperation = new { Operation = localizedOperation, Filename = filename, Timestamp = timestamp };
+                    progressObj.CurrentFile = System.Text.Json.JsonSerializer.Serialize(currentOperation);
+
+                    _logger.LogDebug("File Operation: {operation}, File: {filename}, Timestamp: {timestamp}", operation, filename, timestamp);
                     reporter?.Report(progressObj);
                     return;
                 }
@@ -285,7 +294,6 @@ namespace DriveSync.Infrastructure.Services
                 var percentMatch = percentRegex.Match(line);
                 if (percentMatch.Success && double.TryParse(percentMatch.Groups[1].Value, out double percent))
                 {
-                    // Use a more nuanced approach to progress calculation
                     progressObj.PercentComplete = Math.Min(100, Math.Max(0, percent));
                     _logger.LogDebug("Progress Update - Percentage: {percent}%", percent);
                     reporter?.Report(progressObj);
@@ -313,6 +321,15 @@ namespace DriveSync.Infrastructure.Services
                     {
                         reporter?.Report(progressObj);
                     }
+                }
+
+                // Check for scanning or checking operations
+                if (line.Contains("SCANNING:", StringComparison.OrdinalIgnoreCase))
+                {
+                    progressObj.CurrentOperation = LocalizationManager.Instance["ScanningOperation"];
+                    progressObj.CurrentFile = LocalizationManager.Instance["ScanningForChanges"];
+                    reporter?.Report(progressObj);
+                    return;
                 }
 
                 // Sync completion detection
@@ -349,6 +366,10 @@ namespace DriveSync.Infrastructure.Services
         }
     }
     }
+    
+    
+    
+    
     
     
     

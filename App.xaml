@@ -15,6 +15,10 @@
             <converters:LocalizationConverter x:Key="LocalizationConverter"/>
             <converters:ProgressToWidthConverter x:Key="ProgressToWidthConverter"/>
             <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+            <converters:JsonOperationConverter x:Key="JsonOperationConverter"/>
+            <converters:JsonFilenameConverter x:Key="JsonFilenameConverter"/>
+            <converters:JsonTimestampConverter x:Key="JsonTimestampConverter"/>
+            <converters:SyncOperationIconConverter x:Key="SyncOperationIconConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

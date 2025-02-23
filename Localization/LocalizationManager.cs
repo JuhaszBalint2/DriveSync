@@ -709,9 +709,9 @@ namespace DriveSync.WPF.Localization
 
             // Standardized Operation Translations
             SafeAddTranslation(hungarianTranslations, "CheckOperation", "Fájlok ellenőrzése");
-            SafeAddTranslation(hungarianTranslations, "CopyOperation", "Fájlok másolása");
-            SafeAddTranslation(hungarianTranslations, "DeleteOperation", "Fájlok törlése");
-            SafeAddTranslation(hungarianTranslations, "SkipOperation", "Fájlok kihagyása");
+            SafeAddTranslation(hungarianTranslations, "CopyOperation", "MÁSOLÁS");
+            SafeAddTranslation(hungarianTranslations, "DeleteOperation", "TÖRLÉS");
+            SafeAddTranslation(hungarianTranslations, "SkipOperation", "KIHAGYÁS");
 
             SafeAddTranslation(hungarianTranslations, "FileVerificationCheck", "Fájl ellenőrzés: {0}");
             SafeAddTranslation(hungarianTranslations, "NoFilesToTransfer", "Nincs átvitelre váró fájl");

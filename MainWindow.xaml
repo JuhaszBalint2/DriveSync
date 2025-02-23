@@ -292,16 +292,46 @@
                                 <!-- Operation and File Info -->
                                 <StackPanel Grid.Row="0" Margin="0,0,0,12">
                                     <TextBlock Text="{Binding CurrentSyncOperation}"
-                                              Style="{DynamicResource SubheadingStyle}"
-                                              FontSize="16"
-                                              FontWeight="SemiBold"
-                                              Margin="0,0,0,4"/>
-                                    <TextBlock Text="{Binding CurrentFile}"
-                                              Style="{DynamicResource BodyTextStyle}"
-                                              FontSize="13"
-                                              Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                </StackPanel>
+              Style="{DynamicResource SubheadingStyle}"
+              FontSize="16"
+              FontWeight="SemiBold"
+              Margin="0,0,0,4"/>
 
+                                    <StackPanel Margin="0,4,0,0">
+                                        <TextBlock Style="{DynamicResource BodyTextStyle}"
+           FontSize="13"
+           Margin="0,0,0,2">
+    <Path x:Name="OperationIcon"
+          Width="16"
+          Height="16"
+          Margin="0,0,8,0"
+          VerticalAlignment="Center"
+          Stroke="{DynamicResource TextPrimaryBrush}"
+          StrokeThickness="1.5"
+          Data="{Binding CurrentFile, Converter={StaticResource SyncOperationIconConverter}}"/>
+    <Run Text="{Binding CurrentFile, Converter={StaticResource JsonOperationConverter}}" 
+         Foreground="{DynamicResource AccentBrush}"
+         FontWeight="SemiBold"/>
+                                        </TextBlock>
+                                        <TextBlock Style="{DynamicResource BodyTextStyle}"
+               FontSize="13"
+               TextWrapping="Wrap"
+               Margin="16,0,0,2">
+        <Run Text="{Binding CurrentFile, Converter={StaticResource JsonFilenameConverter}}" 
+             Foreground="{DynamicResource TextPrimaryBrush}"
+             FontWeight="Bold"/>
+                                        </TextBlock>
+
+                                        <TextBlock Style="{DynamicResource BodyTextStyle}"
+               FontSize="12"
+               Margin="0,2,0,0">
+        <Run Text="{Binding CurrentFile, Converter={StaticResource JsonTimestampConverter}}" 
+             Foreground="{DynamicResource TextSecondaryBrush}"
+             FontStyle="Italic"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </StackPanel>
+                                
                                 <!-- Progress Bar Section -->
                                 <Grid Grid.Row="1" Margin="0,0,0,12">
                                     <Grid.RowDefinitions>
