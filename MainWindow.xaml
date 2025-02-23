@@ -24,6 +24,7 @@
 
     <views:ModernWindowBase.Resources>
         <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+        <converters:SyncOperationIconConverter x:Key="SyncOperationIconConverter"/>
     </views:ModernWindowBase.Resources>
 
     <Grid>
@@ -299,19 +300,19 @@
 
                                     <StackPanel Margin="0,4,0,0">
                                         <TextBlock Style="{DynamicResource BodyTextStyle}"
-           FontSize="13"
-           Margin="0,0,0,2">
-    <Path x:Name="OperationIcon"
-          Width="16"
-          Height="16"
-          Margin="0,0,8,0"
-          VerticalAlignment="Center"
-          Stroke="{DynamicResource TextPrimaryBrush}"
-          StrokeThickness="1.5"
-          Data="{Binding CurrentFile, Converter={StaticResource SyncOperationIconConverter}}"/>
-    <Run Text="{Binding CurrentFile, Converter={StaticResource JsonOperationConverter}}" 
-         Foreground="{DynamicResource AccentBrush}"
-         FontWeight="SemiBold"/>
+               FontSize="13" 
+               Margin="0,0,0,2">
+        <Path x:Name="OperationIcon"
+              Width="16"
+              Height="16"
+              Margin="0,0,8,0"
+              VerticalAlignment="Center"
+              Stroke="{DynamicResource TextPrimaryBrush}"
+              StrokeThickness="1.5"
+              Data="{Binding CurrentFile, Converter={StaticResource SyncOperationIconConverter}}"/>
+        <Run Text="{Binding CurrentFile, Converter={StaticResource JsonOperationConverter}}"
+             Foreground="{DynamicResource AccentBrush}"
+             FontWeight="SemiBold"/>
                                         </TextBlock>
                                         <TextBlock Style="{DynamicResource BodyTextStyle}"
                FontSize="13"

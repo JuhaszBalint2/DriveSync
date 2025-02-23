@@ -150,6 +150,7 @@ namespace DriveSync.Infrastructure.Services
                 }
 
                 ProcessProgressOutput(e.Data, syncProgress, progress);
+                _logger.LogDebug("Sync progress: {currentFile}", syncProgress.CurrentFile);
             };
 
             process.ErrorDataReceived += (sender, e) =>
@@ -261,7 +262,7 @@ namespace DriveSync.Infrastructure.Services
                 _logger.LogDebug("Raw input line: {line}", line);
 
                 // Specific file operation handling
-                var fileOperationRegex = new Regex(@"(\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})\s+INFO\s+:\s+(.+?):\s*(Added|Deleted|Copied|Skipped|Created|Modified)");
+                var fileOperationRegex = new Regex(@"(\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})\s+INFO\s+:\s+(.+?):\s*(Added|Deleted|Copied|Skipped|Created|Modified|Moved)");
                 var fileOperationMatch = fileOperationRegex.Match(line);
                 if (fileOperationMatch.Success)
                 {
@@ -272,19 +273,18 @@ namespace DriveSync.Infrastructure.Services
                     string localizedOperation = operation switch
                     {
                         "DELETED" => LocalizationManager.Instance["DeleteOperation"],
-                        "COPIED" => LocalizationManager.Instance["CopyOperation"],
-                        "ADDED" => LocalizationManager.Instance["CopyOperation"],
-                        "CREATED" => LocalizationManager.Instance["CopyOperation"],
-                        "MODIFIED" => LocalizationManager.Instance["CopyOperation"],
+                        "COPIED" or "ADDED" or "CREATED" or "MODIFIED" => LocalizationManager.Instance["CopyOperation"],
                         "SKIPPED" => LocalizationManager.Instance["SkipOperation"],
-                        _ => LocalizationManager.Instance["SyncOperation"]
+                        "MOVED" => LocalizationManager.Instance["MoveOperation"],
+                        _ => LocalizationManager.Instance["CopyOperation"]
                     };
 
                     progressObj.CurrentOperation = localizedOperation;
                     var currentOperation = new { Operation = localizedOperation, Filename = filename, Timestamp = timestamp };
                     progressObj.CurrentFile = System.Text.Json.JsonSerializer.Serialize(currentOperation);
 
-                    _logger.LogDebug("File Operation: {operation}, File: {filename}, Timestamp: {timestamp}", operation, filename, timestamp);
+                    _logger.LogDebug("Updated CurrentFile: {currentFile}", progressObj.CurrentFile);
+
                     reporter?.Report(progressObj);
                     return;
                 }

@@ -348,6 +348,8 @@ namespace DriveSync.WPF.Localization
             SafeAddTranslation(englishTranslations, "CopyOperation", "Copying files");
             SafeAddTranslation(englishTranslations, "DeleteOperation", "Deleting files");
             SafeAddTranslation(englishTranslations, "SkipOperation", "Skipping files");
+            SafeAddTranslation(englishTranslations, "MoveOperation", "Moving files");
+
 
             SafeAddTranslation(englishTranslations, "FileVerificationCheck", "File verification check: {0}");
             SafeAddTranslation(englishTranslations, "NoFilesToTransfer", "No files to transfer");
@@ -712,6 +714,7 @@ namespace DriveSync.WPF.Localization
             SafeAddTranslation(hungarianTranslations, "CopyOperation", "MÁSOLÁS");
             SafeAddTranslation(hungarianTranslations, "DeleteOperation", "TÖRLÉS");
             SafeAddTranslation(hungarianTranslations, "SkipOperation", "KIHAGYÁS");
+            SafeAddTranslation(hungarianTranslations, "MoveOperation", "ÁTHELYEZÉS");
 
             SafeAddTranslation(hungarianTranslations, "FileVerificationCheck", "Fájl ellenőrzés: {0}");
             SafeAddTranslation(hungarianTranslations, "NoFilesToTransfer", "Nincs átvitelre váró fájl");
