@@ -3,6 +3,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:converters="clr-namespace:DriveSync.WPF.Converters"
+    xmlns:fa="http://schemas.fontawesome.io/icons/"
+xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:viewModels="clr-namespace:DriveSync.WPF.ViewModels"
@@ -25,6 +27,55 @@
     <views:ModernWindowBase.Resources>
         <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
         <converters:SyncOperationIconConverter x:Key="SyncOperationIconConverter"/>
+        <Style x:Key="SyncOperationIconStyle" TargetType="fas:IconBlock">
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding CurrentFile, Converter={StaticResource JsonOperationConverter}}" Value="COPYING FILES">
+                    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CurrentFile, Converter={StaticResource JsonOperationConverter}}" Value="MÁSOLÁS">
+                    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CurrentFile, Converter={StaticResource JsonOperationConverter}}" Value="DELETING FILES">
+                    <Setter Property="Foreground" Value="#F44336"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CurrentFile, Converter={StaticResource JsonOperationConverter}}" Value="TÖRLÉS">
+                    <Setter Property="Foreground" Value="#F44336"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CurrentFile, Converter={StaticResource JsonOperationConverter}}" Value="SKIPPING FILES">
+                    <Setter Property="Foreground" Value="#FFA726"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CurrentFile, Converter={StaticResource JsonOperationConverter}}" Value="KIHAGYÁS">
+                    <Setter Property="Foreground" Value="#FFA726"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CurrentFile, Converter={StaticResource JsonOperationConverter}}" Value="MOVING FILES">
+                    <Setter Property="Foreground" Value="#4CAF50"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding CurrentFile, Converter={StaticResource JsonOperationConverter}}" Value="ÁTHELYEZÉS">
+                    <Setter Property="Foreground" Value="#4CAF50"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- New style for secondary info text -->
+        <Style x:Key="SecondaryInfoTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+        </Style>
+
+        <!-- New style for secondary info icons -->
+        <Style x:Key="SecondaryInfoIconStyle" TargetType="fas:IconBlock">
+            <Setter Property="Width" Value="14"/>
+            <Setter Property="Height" Value="14"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+        </Style>
     </views:ModernWindowBase.Resources>
 
     <Grid>
@@ -266,21 +317,21 @@
                         </ComboBox>
                     </DockPanel>
 
-                    <!-- Progress Section -->
+                    <!-- Progress section -->
                     <Border Grid.Row="5" 
-                            Background="{DynamicResource BackgroundBrush}"
-                            BorderBrush="{DynamicResource BorderDefaultBrush}"
-                            BorderThickness="1"
-                            CornerRadius="4"
-                            Padding="16">
+        Background="{DynamicResource BackgroundBrush}"
+        BorderBrush="{DynamicResource BorderDefaultBrush}"
+        BorderThickness="1"
+        CornerRadius="8"
+        Padding="24">
                         <Grid>
                             <!-- Waiting for sync message -->
                             <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[WaitingForSync]}"
-                                      Style="{DynamicResource BodyTextStyle}"
-                                      FontSize="13"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"
-                                      Visibility="{Binding IsSyncing, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
+                  Style="{DynamicResource BodyTextStyle}"
+                  FontSize="14"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Visibility="{Binding IsSyncing, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
 
                             <!-- Active sync progress -->
                             <Grid Visibility="{Binding IsSyncing, Converter={StaticResource BooleanToVisibilityConverter}}">
@@ -291,77 +342,74 @@
                                 </Grid.RowDefinitions>
 
                                 <!-- Operation and File Info -->
-                                <StackPanel Grid.Row="0" Margin="0,0,0,12">
-                                    <TextBlock Text="{Binding CurrentSyncOperation}"
-              Style="{DynamicResource SubheadingStyle}"
-              FontSize="16"
-              FontWeight="SemiBold"
-              Margin="0,0,0,4"/>
-
-                                    <StackPanel Margin="0,4,0,0">
-                                        <TextBlock Style="{DynamicResource BodyTextStyle}"
-               FontSize="13" 
-               Margin="0,0,0,2">
-        <Path x:Name="OperationIcon"
-              Width="16"
-              Height="16"
-              Margin="0,0,8,0"
-              VerticalAlignment="Center"
-              Stroke="{DynamicResource TextPrimaryBrush}"
-              StrokeThickness="1.5"
-              Data="{Binding CurrentFile, Converter={StaticResource SyncOperationIconConverter}}"/>
-        <Run Text="{Binding CurrentFile, Converter={StaticResource JsonOperationConverter}}"
-             Foreground="{DynamicResource AccentBrush}"
-             FontWeight="SemiBold"/>
-                                        </TextBlock>
-                                        <TextBlock Style="{DynamicResource BodyTextStyle}"
-               FontSize="13"
-               TextWrapping="Wrap"
-               Margin="16,0,0,2">
-        <Run Text="{Binding CurrentFile, Converter={StaticResource JsonFilenameConverter}}" 
-             Foreground="{DynamicResource TextPrimaryBrush}"
-             FontWeight="Bold"/>
-                                        </TextBlock>
-
-                                        <TextBlock Style="{DynamicResource BodyTextStyle}"
-               FontSize="12"
-               Margin="0,2,0,0">
-        <Run Text="{Binding CurrentFile, Converter={StaticResource JsonTimestampConverter}}" 
-             Foreground="{DynamicResource TextSecondaryBrush}"
-             FontStyle="Italic"/>
+                                <DockPanel Grid.Row="0" 
+                      Margin="0,0,0,20"
+                      LastChildFill="True">
+                                    <!-- Operation Icon and Text -->
+                                    <StackPanel DockPanel.Dock="Left" 
+                          Orientation="Horizontal"
+                          VerticalAlignment="Center">
+                                        <fas:IconBlock Icon="{Binding CurrentFile, Converter={StaticResource SyncOperationIconConverter}}"
+                                 Style="{StaticResource SyncOperationIconStyle}"/>
+                                        <TextBlock Style="{DynamicResource SubheadingStyle}"
+        FontSize="16"
+        VerticalAlignment="Center">
+<Run Text="{Binding CurrentFile, Converter={StaticResource JsonOperationConverter}}"
+      Foreground="{DynamicResource AccentBrush}"
+      FontWeight="SemiBold"/>
                                         </TextBlock>
                                     </StackPanel>
-                                </StackPanel>
-                                
+
+                                    <!-- Progress Percentage -->
+                                    <TextBlock Text="{Binding ProgressPercentage}"
+                         Style="{DynamicResource BodyTextStyle}"
+                         FontSize="14"
+                         FontWeight="SemiBold"
+                         HorizontalAlignment="Right"
+                         VerticalAlignment="Center"
+                         Margin="0,0,0,8"/>
+                                </DockPanel>
+
+                                <!-- Filename -->
+                                <TextBlock Grid.Row="1"
+        Style="{DynamicResource BodyTextStyle}"
+        TextWrapping="Wrap"
+        Margin="30,0,0,16">
+                                    <TextBlock.Inlines>
+                                        <Run Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[FileLabel], Mode=OneWay}"
+          Foreground="{DynamicResource AccentBrush}"/>
+                                        <Run Text=": "
+          Foreground="{DynamicResource AccentBrush}"/>
+                                        <Run Text="{Binding CurrentFile, Converter={StaticResource JsonFilenameConverter}}" 
+          Foreground="{DynamicResource TextPrimaryBrush}"
+          FontWeight="SemiBold"/>
+                                    </TextBlock.Inlines>
+                                </TextBlock>
                                 <!-- Progress Bar Section -->
-                                <Grid Grid.Row="1" Margin="0,0,0,12">
+                                <Grid Grid.Row="2">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
-                                    <TextBlock Text="{Binding ProgressPercentage}"
-                                              Style="{DynamicResource BodyTextStyle}"
-                                              FontSize="13"
-                                              HorizontalAlignment="Right"
-                                              Margin="0,0,0,4"/>
-
-                                    <Border Grid.Row="1" 
-                                            Background="{DynamicResource BackgroundBrush}"
-                                            CornerRadius="6"
-                                            Height="8">
+                                    <!-- Progress Bar -->
+                                    <Border Grid.Row="0" 
+                        Background="{DynamicResource BackgroundBrush}"
+                        CornerRadius="6"
+                        Height="12"
+                        Margin="0,0,0,16">
                                         <Border.Effect>
                                             <DropShadowEffect ShadowDepth="1" 
-                                                            BlurRadius="4" 
-                                                            Opacity="0.1"/>
+                                        BlurRadius="4" 
+                                        Opacity="0.1"/>
                                         </Border.Effect>
                                         <Grid>
                                             <ProgressBar Value="{Binding ProgressValue}"
-                                                       Maximum="100"
-                                                       Minimum="0"
-                                                       Height="8"
-                                                       Background="Transparent"
-                                                       BorderThickness="0">
+                                   Maximum="100"
+                                   Minimum="0"
+                                   Height="12"
+                                   Background="Transparent"
+                                   BorderThickness="0">
                                                 <ProgressBar.Style>
                                                     <Style TargetType="ProgressBar">
                                                         <Setter Property="Template">
@@ -369,25 +417,25 @@
                                                                 <ControlTemplate TargetType="ProgressBar">
                                                                     <Grid>
                                                                         <Border x:Name="PART_Track"
-                                                                                Background="{TemplateBinding Background}"
-                                                                                CornerRadius="6"/>
+                                                            Background="{TemplateBinding Background}"
+                                                            CornerRadius="6"/>
                                                                         <Border x:Name="PART_Indicator"
-                                                                                Background="{DynamicResource AccentBrush}"
-                                                                                CornerRadius="6"
-                                                                                HorizontalAlignment="Left">
+                                                            Background="{DynamicResource AccentBrush}"
+                                                            CornerRadius="6"
+                                                            HorizontalAlignment="Left">
                                                                             <Border.Width>
                                                                                 <MultiBinding>
                                                                                     <MultiBinding.Converter>
                                                                                         <converters:ProgressToWidthConverter/>
                                                                                     </MultiBinding.Converter>
                                                                                     <Binding Path="Value" 
-                                                                                             RelativeSource="{RelativeSource TemplatedParent}"/>
+                                                                         RelativeSource="{RelativeSource TemplatedParent}"/>
                                                                                     <Binding Path="Minimum" 
-                                                                                             RelativeSource="{RelativeSource TemplatedParent}"/>
+                                                                         RelativeSource="{RelativeSource TemplatedParent}"/>
                                                                                     <Binding Path="Maximum" 
-                                                                                             RelativeSource="{RelativeSource TemplatedParent}"/>
+                                                                         RelativeSource="{RelativeSource TemplatedParent}"/>
                                                                                     <Binding Path="ActualWidth" 
-                                                                                             RelativeSource="{RelativeSource TemplatedParent}"/>
+                                                                         RelativeSource="{RelativeSource TemplatedParent}"/>
                                                                                 </MultiBinding>
                                                                             </Border.Width>
                                                                         </Border>
@@ -400,40 +448,50 @@
                                             </ProgressBar>
                                         </Grid>
                                     </Border>
-                                </Grid>
 
-                                <!-- Speed and Time Info -->
-                                <StackPanel Grid.Row="2" 
-                                          Orientation="Horizontal"
-                                          Margin="0,4,0,0">
-                                    <StackPanel Orientation="Horizontal" 
-                                              Margin="0,0,24,0">
-                                        <Path Data="M13.645 10.605l-5.25-5.25a.75.75 0 00-1.06 0l-5.25 5.25a.75.75 0 001.06 1.06L8 7.06l4.855 4.855a.75.75 0 001.06-1.06z"
-                                              Fill="{DynamicResource TextSecondaryBrush}"
-                                              Width="12"
-                                              Height="12"
-                                              Margin="0,0,8,0"
-                                              VerticalAlignment="Center"
-                                              ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[TransferSpeed]}"/>
-                                        <TextBlock Text="{Binding CurrentSpeed}"
-                                                  Style="{DynamicResource BodyTextStyle}"
-                                                  FontSize="13"
-                                                  Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <Path Data="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                                              Fill="{DynamicResource TextSecondaryBrush}"
-                                              Width="12"
-                                              Height="12"
-                                              Margin="0,0,8,0"
-                                              VerticalAlignment="Center"
-                                              ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[TimeRemaining]}"/>
-                                        <TextBlock Text="{Binding RemainingTime}"
-                                                  Style="{DynamicResource BodyTextStyle}"
-                                                  FontSize="13"
-                                                  Foreground="{DynamicResource TextSecondaryBrush}"/>
-                                    </StackPanel>
-                                </StackPanel>
+                                    <!-- Speed and Time Info -->
+                                    <Grid Grid.Row="1">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Speed Info -->
+                                        <StackPanel Grid.Column="0" 
+         Orientation="Horizontal"
+         Margin="0,0,24,0">
+                                            <fas:IconBlock Icon="ArrowUp"
+Style="{StaticResource SecondaryInfoIconStyle}"/>
+                                            <TextBlock Text="{Binding CurrentSpeed}"
+            Style="{StaticResource SecondaryInfoTextStyle}"/>
+                                        </StackPanel>
+                                        
+                                        <!-- Timestamp -->
+                                        <StackPanel Grid.Column="1"
+         Orientation="Horizontal"
+         HorizontalAlignment="Center">
+                                            <TextBlock Style="{StaticResource SecondaryInfoTextStyle}">
+                                                <TextBlock.Inlines>
+                                                    <Run Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DateLabel], Mode=OneWay}"/>
+                                                    <Run Text=": "/>
+                                                    <Run Text="{Binding CurrentFile, Converter={StaticResource JsonTimestampConverter}}" 
+              FontStyle="Italic"/>
+                                                </TextBlock.Inlines>
+                                            </TextBlock>
+                                        </StackPanel>
+                                        
+                                        <!-- Time Remaining -->
+                                        <StackPanel Grid.Column="2" 
+         Orientation="Horizontal">
+                                            <fas:IconBlock Icon="Clock"
+Style="{StaticResource SecondaryInfoIconStyle}"/>
+                                            <TextBlock Text="{Binding RemainingTime}"
+            Style="{StaticResource SecondaryInfoTextStyle}"/>
+                                        </StackPanel>
+                                        
+                                    </Grid>
+                                </Grid>
                             </Grid>
                         </Grid>
                     </Border>
@@ -441,4 +499,5 @@
             </Border>
         </Grid>
     </Grid>
+ 
 </views:ModernWindowBase>

@@ -364,6 +364,8 @@ namespace DriveSync.WPF.Localization
 
             SafeAddTranslation(englishTranslations, "FileDeleted", "Deleted:");
 
+            SafeAddTranslation(englishTranslations, "FileLabel", "File");
+            SafeAddTranslation(englishTranslations, "DateLabel", "Date");
         }
 
         private void AddHungarianTranslations()
@@ -728,6 +730,9 @@ namespace DriveSync.WPF.Localization
             SafeAddTranslation(hungarianTranslations, "PercentComplete", "{0}% kész");
 
             SafeAddTranslation(hungarianTranslations, "FileDeleted", "Törölve:");
+
+            SafeAddTranslation(hungarianTranslations, "FileLabel", "Fájl");
+            SafeAddTranslation(hungarianTranslations, "DateLabel", "Időpont");
 
         }
 
