@@ -65,17 +65,18 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
         <!-- New style for secondary info text -->
         <Style x:Key="SecondaryInfoTextStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
         </Style>
-
+        
         <!-- New style for secondary info icons -->
         <Style x:Key="SecondaryInfoIconStyle" TargetType="fas:IconBlock">
             <Setter Property="Width" Value="14"/>
             <Setter Property="Height" Value="14"/>
             <Setter Property="Margin" Value="0,0,6,0"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
         </Style>
+        
     </views:ModernWindowBase.Resources>
 
     <Grid>
@@ -377,7 +378,7 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
         Margin="30,0,0,16">
                                     <TextBlock.Inlines>
                                         <Run Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[FileLabel], Mode=OneWay}"
-          Foreground="{DynamicResource AccentBrush}"/>
+          Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <Run Text=": "
           Foreground="{DynamicResource AccentBrush}"/>
                                         <Run Text="{Binding CurrentFile, Converter={StaticResource JsonFilenameConverter}}" 
@@ -394,22 +395,22 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
 
                                     <!-- Progress Bar -->
                                     <Border Grid.Row="0" 
-                        Background="{DynamicResource BackgroundBrush}"
-                        CornerRadius="6"
-                        Height="12"
-                        Margin="0,0,0,16">
+            Background="{DynamicResource BackgroundBrush}"
+            CornerRadius="8"
+            Height="14"
+            Margin="0,0,0,16">
                                         <Border.Effect>
                                             <DropShadowEffect ShadowDepth="1" 
-                                        BlurRadius="4" 
-                                        Opacity="0.1"/>
+                        BlurRadius="4" 
+                        Opacity="0.1"/>
                                         </Border.Effect>
                                         <Grid>
                                             <ProgressBar Value="{Binding ProgressValue}"
-                                   Maximum="100"
-                                   Minimum="0"
-                                   Height="12"
-                                   Background="Transparent"
-                                   BorderThickness="0">
+                         Maximum="100"
+                         Minimum="0"
+                         Height="14"
+                         Background="Transparent"
+                         BorderThickness="0">
                                                 <ProgressBar.Style>
                                                     <Style TargetType="ProgressBar">
                                                         <Setter Property="Template">
@@ -417,25 +418,25 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                                                                 <ControlTemplate TargetType="ProgressBar">
                                                                     <Grid>
                                                                         <Border x:Name="PART_Track"
-                                                            Background="{TemplateBinding Background}"
-                                                            CornerRadius="6"/>
+                                                Background="{DynamicResource SurfaceBrush}"
+                                                CornerRadius="7"/>
                                                                         <Border x:Name="PART_Indicator"
-                                                            Background="{DynamicResource AccentBrush}"
-                                                            CornerRadius="6"
-                                                            HorizontalAlignment="Left">
+                                                Background="{DynamicResource AccentBrush}"
+                                                CornerRadius="7"
+                                                HorizontalAlignment="Left">
                                                                             <Border.Width>
                                                                                 <MultiBinding>
                                                                                     <MultiBinding.Converter>
                                                                                         <converters:ProgressToWidthConverter/>
                                                                                     </MultiBinding.Converter>
                                                                                     <Binding Path="Value" 
-                                                                         RelativeSource="{RelativeSource TemplatedParent}"/>
+                                             RelativeSource="{RelativeSource TemplatedParent}"/>
                                                                                     <Binding Path="Minimum" 
-                                                                         RelativeSource="{RelativeSource TemplatedParent}"/>
+                                             RelativeSource="{RelativeSource TemplatedParent}"/>
                                                                                     <Binding Path="Maximum" 
-                                                                         RelativeSource="{RelativeSource TemplatedParent}"/>
+                                             RelativeSource="{RelativeSource TemplatedParent}"/>
                                                                                     <Binding Path="ActualWidth" 
-                                                                         RelativeSource="{RelativeSource TemplatedParent}"/>
+                                             RelativeSource="{RelativeSource TemplatedParent}"/>
                                                                                 </MultiBinding>
                                                                             </Border.Width>
                                                                         </Border>
@@ -459,37 +460,36 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
 
                                         <!-- Speed Info -->
                                         <StackPanel Grid.Column="0" 
-         Orientation="Horizontal"
-         Margin="0,0,24,0">
+                    Orientation="Horizontal"
+                    Margin="0,0,24,0">
                                             <fas:IconBlock Icon="ArrowUp"
-Style="{StaticResource SecondaryInfoIconStyle}"/>
+                           Style="{StaticResource SecondaryInfoIconStyle}"/>
                                             <TextBlock Text="{Binding CurrentSpeed}"
-            Style="{StaticResource SecondaryInfoTextStyle}"/>
+                       Style="{StaticResource SecondaryInfoTextStyle}"/>
                                         </StackPanel>
-                                        
+
                                         <!-- Timestamp -->
                                         <StackPanel Grid.Column="1"
-         Orientation="Horizontal"
-         HorizontalAlignment="Center">
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center">
                                             <TextBlock Style="{StaticResource SecondaryInfoTextStyle}">
                                                 <TextBlock.Inlines>
                                                     <Run Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DateLabel], Mode=OneWay}"/>
                                                     <Run Text=": "/>
                                                     <Run Text="{Binding CurrentFile, Converter={StaticResource JsonTimestampConverter}}" 
-              FontStyle="Italic"/>
+                         FontStyle="Italic"/>
                                                 </TextBlock.Inlines>
                                             </TextBlock>
                                         </StackPanel>
-                                        
+
                                         <!-- Time Remaining -->
                                         <StackPanel Grid.Column="2" 
-         Orientation="Horizontal">
+                    Orientation="Horizontal">
                                             <fas:IconBlock Icon="Clock"
-Style="{StaticResource SecondaryInfoIconStyle}"/>
+                           Style="{StaticResource SecondaryInfoIconStyle}"/>
                                             <TextBlock Text="{Binding RemainingTime}"
-            Style="{StaticResource SecondaryInfoTextStyle}"/>
+                       Style="{StaticResource SecondaryInfoTextStyle}"/>
                                         </StackPanel>
-                                        
                                     </Grid>
                                 </Grid>
                             </Grid>
