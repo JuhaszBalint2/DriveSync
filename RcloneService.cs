@@ -12,7 +12,6 @@ namespace DriveSync.Infrastructure.Services
 {
     public class SyncProgress
     {
-
         private string GetThemeColor(string colorType)
         {
             var settings = AppSettings.Load();
@@ -41,7 +40,6 @@ namespace DriveSync.Infrastructure.Services
         public string FileColor => GetThemeColor("File");
         public string DateColor => GetThemeColor("Date");
 
-
         public double PercentComplete { get; set; }
         public string Speed { get; set; }
         public string TimeRemaining { get; set; }
@@ -59,8 +57,7 @@ namespace DriveSync.Infrastructure.Services
         private const string OP_COPY = "COPY";
         private const string OP_DELETE = "DELETE";
         private const string OP_SKIP = "SKIP";
-
-
+        private const string OP_MOVE = "MOVE";
 
         public RcloneService(ILogger<RcloneService> logger)
         {
@@ -180,7 +177,7 @@ namespace DriveSync.Infrastructure.Services
                     isFirstUpdate = false;
                 }
 
-                ProcessProgressOutput(e.Data, syncProgress, progress);
+                ProcessProgressOutput(e.Data, syncProgress, progress, syncType);
                 _logger.LogDebug("Sync progress: {currentFile}", syncProgress.CurrentFile);
             };
 
@@ -190,7 +187,7 @@ namespace DriveSync.Infrastructure.Services
                     return;
                 fullLog.AppendLine(e.Data);
                 _logger.LogDebug("rclone error: {line}", e.Data);
-                ProcessProgressOutput(e.Data, syncProgress, progress);
+                ProcessProgressOutput(e.Data, syncProgress, progress, syncType);
                 errorBuilder.AppendLine(e.Data);
             };
 
@@ -283,7 +280,7 @@ namespace DriveSync.Infrastructure.Services
             }
         }
 
-        private void ProcessProgressOutput(string line, SyncProgress progressObj, IProgress<SyncProgress> reporter)
+        private void ProcessProgressOutput(string line, SyncProgress progressObj, IProgress<SyncProgress> reporter, SyncType syncType)
         {
             try
             {
@@ -296,12 +293,7 @@ namespace DriveSync.Infrastructure.Services
                 if (line.Contains("rclone move ", StringComparison.OrdinalIgnoreCase))
                 {
                     progressObj.CurrentOperation = LocalizationManager.Instance["MoveOperation"];
-                    progressObj.CurrentFile = System.Text.Json.JsonSerializer.Serialize(new
-                    {
-                        Operation = LocalizationManager.Instance["MoveOperation"],
-                        Description = "Directory move in progress",
-                        Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-                    });
+                    CreateFileOperation(progressObj, "MoveOperation", "Directory move in progress", DateTime.Now);
                     _logger.LogDebug("Global move operation detected");
                     reporter?.Report(progressObj);
                     return;
@@ -315,19 +307,37 @@ namespace DriveSync.Infrastructure.Services
                     string timestamp = deletionMatch.Groups[1].Value;
                     string filename = deletionMatch.Groups[2].Value.Trim();
 
-                    // Detect if this is part of a move operation
-                    progressObj.CurrentOperation = LocalizationManager.Instance["MoveOperation"];
-                    var currentOperation = new
+                    // For Move operation, always show as Move
+                    if (syncType == SyncType.Move)
                     {
-                        Operation = LocalizationManager.Instance["MoveOperation"],
-                        Filename = filename,
-                        Timestamp = timestamp
-                    };
-                    progressObj.CurrentFile = System.Text.Json.JsonSerializer.Serialize(currentOperation);
+                        progressObj.CurrentOperation = LocalizationManager.Instance["MoveOperation"];
+                        CreateFileOperation(progressObj, "MoveOperation", filename, DateTime.Parse(timestamp));
+                        _logger.LogDebug("Move operation deletion detected: {filename}", filename);
+                    }
+                    else
+                    {
+                        progressObj.CurrentOperation = LocalizationManager.Instance["DeleteOperation"];
+                        CreateFileOperation(progressObj, "DeleteOperation", filename, DateTime.Parse(timestamp));
+                        _logger.LogDebug("Delete operation detected: {filename}", filename);
+                    }
 
-                    _logger.LogDebug("Move operation deletion detected: {filename}", filename);
                     reporter?.Report(progressObj);
                     return;
+                }
+
+                // Detect copy operations - skip for move operations as they're handled differently
+                if (syncType != SyncType.Move)
+                {
+                    var copyRegex = new Regex(@"INFO\s+:\s+([^:]+):\s*Copied", RegexOptions.IgnoreCase);
+                    var copyMatch = copyRegex.Match(line);
+                    if (copyMatch.Success)
+                    {
+                        string filename = copyMatch.Groups[1].Value.Trim();
+                        progressObj.CurrentOperation = LocalizationManager.Instance["CopyOperation"];
+                        CreateFileOperation(progressObj, "CopyOperation", filename, DateTime.Now);
+                        reporter?.Report(progressObj);
+                        return;
+                    }
                 }
 
                 // Existing percentage and speed tracking remains the same
@@ -382,17 +392,35 @@ namespace DriveSync.Infrastructure.Services
                 _logger.LogError(ex, "Error processing progress output: {line}", line);
             }
         }
-    }
-    }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
+        private void CreateFileOperation(SyncProgress progressObj, string operation, string filename, DateTime timestamp)
+        {
+            try
+            {
+                // Instead of trying to use JsonSerializer directly on an anonymous object, we'll build a simple JSON string manually
+                // This avoids the JSON parsing errors we were seeing
+                string opKey = GetOperationKey(operation);
+                string json = $"{{\"Operation\":\"{opKey}\",\"Filename\":\"{filename}\",\"Timestamp\":\"{timestamp.ToString("yyyy/MM/dd HH:mm:ss")}\"}}";
+                progressObj.CurrentFile = json;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating file operation JSON");
+                progressObj.CurrentFile = filename; // Fallback to just the filename
+            }
+        }
+
+        private string GetOperationKey(string operation)
+        {
+            // Map the operation name to appropriate localized value
+            return operation switch
+            {
+                "MoveOperation" => LocalizationManager.Instance["MoveOperation"],
+                "CopyOperation" => LocalizationManager.Instance["CopyOperation"],
+                "DeleteOperation" => LocalizationManager.Instance["DeleteOperation"],
+                "SkipOperation" => LocalizationManager.Instance["SkipOperation"],
+                _ => operation // Return the original value if not matched
+            };
+        }
+    }
+}
