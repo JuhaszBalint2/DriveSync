@@ -757,10 +757,10 @@ namespace DriveSync.WPF.ViewModels
                     CurrentFileColor = progress.FileColor;
                     CurrentDateColor = progress.DateColor;
 
+                    // New code - use the raw time value without the wrapper
                     RemainingTime = !string.IsNullOrWhiteSpace(progress.TimeRemaining)
-                        ? string.Format(LocalizationManager.Instance["TimeLeft"], progress.TimeRemaining)
-                        : LocalizationManager.Instance["Calculating"];
-
+                        ? progress.TimeRemaining
+                        : LocalizationManager.Instance["CalculatingTime"];
 
                 }
 

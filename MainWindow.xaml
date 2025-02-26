@@ -43,13 +43,13 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
             </Style.Triggers>
         </Style>
 
-        <!-- Secondary Info Icon Style -->
+        <!-- Secondary Info Icon Style - REDUCED SIZE -->
         <Style x:Key="SecondaryInfoIconStyle" TargetType="fas:IconBlock">
-            <Setter Property="Width" Value="18"/>
-            <Setter Property="Height" Value="18"/>
-            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Width" Value="16"/>
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontSize" Value="16"/>
             <Setter Property="Foreground" Value="#0078D4"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Background.Color}" Value="#303030">
@@ -442,9 +442,10 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <!-- Speed Info - Using BOLT icon instead of Arrow -->
+                                        <!-- Speed Info - Using BOLT icon -->
                                         <StackPanel Grid.Column="0" 
                                                     Orientation="Horizontal"
                                                     Margin="0,0,0,0">
@@ -467,11 +468,17 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                                                        Margin="4,0,0,0"/>
                                         </StackPanel>
 
-                                        <!-- Clock icon only - no text -->
-                                        <fas:IconBlock Grid.Column="2"
-                                                       Icon="Clock" 
-                                                       Style="{StaticResource SecondaryInfoIconStyle}"
-                                                       HorizontalAlignment="Right"/>
+                                        <!-- Time Remaining - Icon and value -->
+                                        <StackPanel Grid.Column="2"
+                                                   Orientation="Horizontal"
+                                                   HorizontalAlignment="Right"
+                                                   Margin="0,0,0,0">
+                                            <fas:IconBlock Icon="Clock" 
+                                                          Style="{StaticResource SecondaryInfoIconStyle}"/>
+                                            <TextBlock Text="{Binding RemainingTime}"
+                                                      Style="{StaticResource SecondaryInfoTextStyle}"
+                                                      Margin="4,0,0,0"/>
+                                        </StackPanel>
                                     </Grid>
                                 </Grid>
                             </Grid>
