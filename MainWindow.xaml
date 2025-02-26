@@ -459,36 +459,43 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                                         </Grid.ColumnDefinitions>
 
                                         <!-- Speed Info -->
+                                        <!-- Speed Info -->
                                         <StackPanel Grid.Column="0" 
-                    Orientation="Horizontal"
-                    Margin="0,0,24,0">
+            Orientation="Horizontal"
+            Margin="0,0,24,0">
                                             <fas:IconBlock Icon="ArrowUp"
-                           Style="{StaticResource SecondaryInfoIconStyle}"/>
+                   Style="{StaticResource SecondaryInfoIconStyle}"
+                   Foreground="{Binding CurrentSpeedColor}"/>
                                             <TextBlock Text="{Binding CurrentSpeed}"
-                       Style="{StaticResource SecondaryInfoTextStyle}"/>
+               Foreground="{Binding CurrentSpeedColor}"
+               Style="{StaticResource SecondaryInfoTextStyle}"/>
                                         </StackPanel>
 
                                         <!-- Timestamp -->
                                         <StackPanel Grid.Column="1"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Center">
+            Orientation="Horizontal"
+            HorizontalAlignment="Center">
                                             <TextBlock Style="{StaticResource SecondaryInfoTextStyle}">
                                                 <TextBlock.Inlines>
-                                                    <Run Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DateLabel], Mode=OneWay}"/>
+                                                    <Run Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DateLabel], Mode=OneWay}"
+                 Foreground="{Binding CurrentDateColor}"/>
                                                     <Run Text=": "/>
                                                     <Run Text="{Binding CurrentFile, Converter={StaticResource JsonTimestampConverter}}" 
-                         FontStyle="Italic"/>
+                 FontStyle="Italic"
+                 Foreground="{Binding CurrentDateColor}"/>
                                                 </TextBlock.Inlines>
                                             </TextBlock>
                                         </StackPanel>
 
                                         <!-- Time Remaining -->
                                         <StackPanel Grid.Column="2" 
-                    Orientation="Horizontal">
+            Orientation="Horizontal">
                                             <fas:IconBlock Icon="Clock"
-                           Style="{StaticResource SecondaryInfoIconStyle}"/>
+                   Style="{StaticResource SecondaryInfoIconStyle}"
+                   Foreground="{Binding CurrentETAColor}"/>
                                             <TextBlock Text="{Binding RemainingTime}"
-                       Style="{StaticResource SecondaryInfoTextStyle}"/>
+               Foreground="{Binding CurrentETAColor}"
+               Style="{StaticResource SecondaryInfoTextStyle}"/>
                                         </StackPanel>
                                     </Grid>
                                 </Grid>

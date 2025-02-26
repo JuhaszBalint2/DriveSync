@@ -149,6 +149,18 @@ namespace DriveSync.WPF.ViewModels
         [ObservableProperty]
         private bool isCheckingForUpdates;
 
+        [ObservableProperty]
+        private string currentSpeedColor;
+
+        [ObservableProperty]
+        private string currentETAColor;
+
+        [ObservableProperty]
+        private string currentFileColor;
+
+        [ObservableProperty]
+        private string currentDateColor;
+
         partial void OnIsSyncingChanged(bool value)
         {
             ButtonText = value ?
@@ -739,16 +751,27 @@ namespace DriveSync.WPF.ViewModels
                         ? progress.Speed
                         : LocalizationManager.Instance["ZeroSpeed"];
 
+                    // Add color properties
+                    CurrentSpeedColor = progress.SpeedColor;
+                    CurrentETAColor = progress.ETAColor;
+                    CurrentFileColor = progress.FileColor;
+                    CurrentDateColor = progress.DateColor;
+
                     RemainingTime = !string.IsNullOrWhiteSpace(progress.TimeRemaining)
                         ? string.Format(LocalizationManager.Instance["TimeLeft"], progress.TimeRemaining)
                         : LocalizationManager.Instance["Calculating"];
+
+
                 }
+
+
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating sync progress");
             }
         }
+
 
         public void ApplyTheme(string themeName)
         {

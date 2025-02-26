@@ -6,11 +6,42 @@ using System.Threading;
 using System.Threading.Tasks;
 using DriveSync.WPF.Localization;
 using Microsoft.Extensions.Logging;
+using DriveSync.WPF;
 
 namespace DriveSync.Infrastructure.Services
 {
     public class SyncProgress
     {
+
+        private string GetThemeColor(string colorType)
+        {
+            var settings = AppSettings.Load();
+            string theme = settings.GetEffectiveTheme();
+
+            return (theme, colorType) switch
+            {
+                // Dark Theme Colors
+                ("Dark", "Speed") => "#FFFFFF",    // White for all elements in Dark Theme
+                ("Dark", "ETA") => "#FFFFFF",      // White
+                ("Dark", "File") => "#FFFFFF",     // White
+                ("Dark", "Date") => "#FFFFFF",     // White
+
+                // Light Theme Colors
+                ("Light", "Speed") => "#0078D4",   // Primary color (blue)
+                ("Light", "ETA") => "#0078D4",     // Primary color (blue)
+                ("Light", "File") => "#0078D4",    // Primary color (blue)
+                ("Light", "Date") => "#0078D4",    // Primary color (blue)
+
+                _ => "#757575"  // Fallback neutral color
+            };
+        }
+
+        public string SpeedColor => GetThemeColor("Speed");
+        public string ETAColor => GetThemeColor("ETA");
+        public string FileColor => GetThemeColor("File");
+        public string DateColor => GetThemeColor("Date");
+
+
         public double PercentComplete { get; set; }
         public string Speed { get; set; }
         public string TimeRemaining { get; set; }
