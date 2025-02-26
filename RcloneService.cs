@@ -45,7 +45,9 @@ namespace DriveSync.Infrastructure.Services
         public string TimeRemaining { get; set; }
         public string CurrentFile { get; set; }
         public string CurrentOperation { get; set; }
+        public bool IsScanning { get; set; } = false; // New property to track scanning state
     }
+
 
     public class RcloneService : IRcloneService
     {
@@ -151,17 +153,26 @@ namespace DriveSync.Infrastructure.Services
                 StandardErrorEncoding = Encoding.UTF8
             };
 
+            // Create a constant for the scanning message
+            string scanningMessage = LocalizationManager.Instance["ScanningForChanges"];
+
+            // Initialize with explicit scanning state
             var syncProgress = new SyncProgress
             {
                 PercentComplete = 0,
-                CurrentOperation = LocalizationManager.Instance["SyncInitializing"],
-                CurrentFile = LocalizationManager.Instance["PreparingToSync"],
+                CurrentOperation = LocalizationManager.Instance["ScanningOperation"],
+                CurrentFile = scanningMessage, // Set this explicitly
                 Speed = LocalizationManager.Instance["ZeroSpeed"],
-                TimeRemaining = LocalizationManager.Instance["CalculatingProgress"]
+                TimeRemaining = LocalizationManager.Instance["CalculatingProgress"],
+                IsScanning = true
             };
 
+            // Report initial state
+            progress?.Report(syncProgress);
+
             var errorBuilder = new StringBuilder();
-            bool isFirstUpdate = true;
+            bool operationStarted = false;
+            DateTime lastUpdateTime = DateTime.Now;
 
             process.OutputDataReceived += (sender, e) =>
             {
@@ -169,16 +180,19 @@ namespace DriveSync.Infrastructure.Services
                     return;
                 fullLog.AppendLine(e.Data);
                 _logger.LogDebug("rclone output: {line}", e.Data);
-                if (isFirstUpdate)
+
+                // Check for the start of actual file operations
+                if (syncProgress.IsScanning &&
+                    (e.Data.Contains("Copied (new)", StringComparison.OrdinalIgnoreCase) ||
+                     e.Data.Contains("Deleted", StringComparison.OrdinalIgnoreCase) ||
+                     e.Data.Contains("Moved", StringComparison.OrdinalIgnoreCase)))
                 {
-                    syncProgress.CurrentOperation = LocalizationManager.Instance["ScanningOperation"];
-                    syncProgress.CurrentFile = LocalizationManager.Instance["ScanningForChanges"];
-                    progress.Report(syncProgress);
-                    isFirstUpdate = false;
+                    syncProgress.IsScanning = false;
+                    operationStarted = true;
                 }
 
+                // Process the line
                 ProcessProgressOutput(e.Data, syncProgress, progress, syncType);
-                _logger.LogDebug("Sync progress: {currentFile}", syncProgress.CurrentFile);
             };
 
             process.ErrorDataReceived += (sender, e) =>
@@ -200,6 +214,17 @@ namespace DriveSync.Infrastructure.Services
                 while (!process.HasExited)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
+
+                    // Periodically refresh the scanning message to ensure it's visible
+                    if (syncProgress.IsScanning && !operationStarted &&
+                        (DateTime.Now - lastUpdateTime).TotalMilliseconds > 500)
+                    {
+                        syncProgress.CurrentOperation = LocalizationManager.Instance["ScanningOperation"];
+                        syncProgress.CurrentFile = scanningMessage;
+                        progress.Report(syncProgress);
+                        lastUpdateTime = DateTime.Now;
+                    }
+
                     await Task.Delay(100, cancellationToken);
                 }
 
@@ -215,6 +240,7 @@ namespace DriveSync.Infrastructure.Services
                 syncProgress.CurrentFile = LocalizationManager.Instance["SyncCompletedSuccess"];
                 syncProgress.Speed = LocalizationManager.Instance["ZeroSpeed"];
                 syncProgress.TimeRemaining = "-";
+                syncProgress.IsScanning = false;
                 progress.Report(syncProgress);
 
                 _logger.LogInformation($"Successfully executed {commandVerb} from {sourceFullPath} to {targetFullPath}");
@@ -226,6 +252,9 @@ namespace DriveSync.Infrastructure.Services
                 throw;
             }
         }
+
+
+
 
         private async Task<string> ExecuteCommand(string arguments)
         {
@@ -286,20 +315,50 @@ namespace DriveSync.Infrastructure.Services
             {
                 if (string.IsNullOrWhiteSpace(line))
                     return;
+
                 _logger.LogDebug("=== START PROCESSING LINE ===");
                 _logger.LogDebug("Raw input line: {line}", line);
 
-                // Global move operation detection
-                if (line.Contains("rclone move ", StringComparison.OrdinalIgnoreCase))
+                // If in scanning mode, maintain the scanning message for most log lines
+                if (progressObj.IsScanning)
                 {
-                    progressObj.CurrentOperation = LocalizationManager.Instance["MoveOperation"];
-                    CreateFileOperation(progressObj, "MoveOperation", "Directory move in progress", DateTime.Now);
-                    _logger.LogDebug("Global move operation detected");
+                    // Don't change CurrentFile during scanning phase for most log lines
+                    if (!line.Contains(" Copied ", StringComparison.OrdinalIgnoreCase) &&
+                        !line.Contains(" Deleted ", StringComparison.OrdinalIgnoreCase) &&
+                        !line.Contains(" Moved ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Make sure CurrentFile is set to scanning message
+                        if (progressObj.CurrentFile != LocalizationManager.Instance["ScanningForChanges"])
+                        {
+                            progressObj.CurrentFile = LocalizationManager.Instance["ScanningForChanges"];
+                        }
+
+                        // Only update progress, speed and remaining time during scanning
+                        UpdateStatistics(line, progressObj, reporter);
+                        _logger.LogDebug("=== END PROCESSING LINE (SCANNING) ===\n");
+                        return;
+                    }
+                    else
+                    {
+                        // Transition from scanning to operation phase
+                        progressObj.IsScanning = false;
+                    }
+
+                }
+
+                // Process copy operations
+                var copyRegex = new Regex(@"INFO\s+:\s+([^:]+):\s*Copied", RegexOptions.IgnoreCase);
+                var copyMatch = copyRegex.Match(line);
+                if (copyMatch.Success)
+                {
+                    string filename = copyMatch.Groups[1].Value.Trim();
+                    progressObj.CurrentOperation = LocalizationManager.Instance["CopyOperation"];
+                    CreateFileOperation(progressObj, "CopyOperation", filename, DateTime.Now);
                     reporter?.Report(progressObj);
                     return;
                 }
 
-                // Detect specific file deletion during move operation
+                // Process delete operations
                 var deletionRegex = new Regex(@"(\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2}:\d{2})\s+INFO\s+:\s+([^:]+):\s*Deleted", RegexOptions.IgnoreCase);
                 var deletionMatch = deletionRegex.Match(line);
                 if (deletionMatch.Success)
@@ -325,53 +384,18 @@ namespace DriveSync.Infrastructure.Services
                     return;
                 }
 
-                // Detect copy operations - skip for move operations as they're handled differently
-                if (syncType != SyncType.Move)
+                // Global move operation detection
+                if (line.Contains("rclone move ", StringComparison.OrdinalIgnoreCase))
                 {
-                    var copyRegex = new Regex(@"INFO\s+:\s+([^:]+):\s*Copied", RegexOptions.IgnoreCase);
-                    var copyMatch = copyRegex.Match(line);
-                    if (copyMatch.Success)
-                    {
-                        string filename = copyMatch.Groups[1].Value.Trim();
-                        progressObj.CurrentOperation = LocalizationManager.Instance["CopyOperation"];
-                        CreateFileOperation(progressObj, "CopyOperation", filename, DateTime.Now);
-                        reporter?.Report(progressObj);
-                        return;
-                    }
-                }
-
-                // Existing percentage and speed tracking remains the same
-                var percentRegex = new Regex(@"(?i)(\d+(?:\.\d+)?)\s*%");
-                var percentMatch = percentRegex.Match(line);
-                if (percentMatch.Success && double.TryParse(percentMatch.Groups[1].Value, out double percent))
-                {
-                    progressObj.PercentComplete = Math.Min(100, Math.Max(0, percent));
-                    _logger.LogDebug("Progress Update - Percentage: {percent}%", percent);
+                    progressObj.CurrentOperation = LocalizationManager.Instance["MoveOperation"];
+                    CreateFileOperation(progressObj, "MoveOperation", "Directory move in progress", DateTime.Now);
+                    _logger.LogDebug("Global move operation detected");
                     reporter?.Report(progressObj);
+                    return;
                 }
 
-                var statsRegex = new Regex(@"(?:Transferred:.*?\s+)?\(*\s*([\d\.]+\s*\w+/s)\s*\)?(?:.*ETA[:\s]*([\dhms]+))?", RegexOptions.IgnoreCase);
-                var statsMatch = statsRegex.Match(line);
-                if (statsMatch.Success)
-                {
-                    bool statsUpdated = false;
-                    if (statsMatch.Groups[1].Success && !string.IsNullOrWhiteSpace(statsMatch.Groups[1].Value))
-                    {
-                        progressObj.Speed = statsMatch.Groups[1].Value.Trim();
-                        _logger.LogDebug("Speed Updated: {speed}", progressObj.Speed);
-                        statsUpdated = true;
-                    }
-                    if (statsMatch.Groups[2].Success && !string.IsNullOrWhiteSpace(statsMatch.Groups[2].Value))
-                    {
-                        progressObj.TimeRemaining = statsMatch.Groups[2].Value.Trim();
-                        _logger.LogDebug("Time Remaining Updated: {timeRemaining}", progressObj.TimeRemaining);
-                        statsUpdated = true;
-                    }
-                    if (statsUpdated)
-                    {
-                        reporter?.Report(progressObj);
-                    }
-                }
+                // Update statistics (percent, speed, time remaining)
+                UpdateStatistics(line, progressObj, reporter);
 
                 // Sync completion check
                 if (line.Contains("There was nothing to transfer", StringComparison.OrdinalIgnoreCase))
@@ -393,14 +417,61 @@ namespace DriveSync.Infrastructure.Services
             }
         }
 
+        // Helper method to update statistics during both scanning and operation phases
+        private void UpdateStatistics(string line, SyncProgress progressObj, IProgress<SyncProgress> reporter)
+        {
+            // Update percentage if available
+            var percentRegex = new Regex(@"(?i)(\d+(?:\.\d+)?)\s*%");
+            var percentMatch = percentRegex.Match(line);
+            if (percentMatch.Success && double.TryParse(percentMatch.Groups[1].Value, out double percent))
+            {
+                progressObj.PercentComplete = Math.Min(100, Math.Max(0, percent));
+                _logger.LogDebug("Progress Update - Percentage: {percent}%", percent);
+                reporter?.Report(progressObj);
+            }
+
+            // Update speed and time remaining if available
+            var statsRegex = new Regex(@"(?:Transferred:.*?\s+)?\(*\s*([\d\.]+\s*\w+/s)\s*\)?(?:.*ETA[:\s]*([\dhms]+))?", RegexOptions.IgnoreCase);
+            var statsMatch = statsRegex.Match(line);
+            if (statsMatch.Success)
+            {
+                bool statsUpdated = false;
+                if (statsMatch.Groups[1].Success && !string.IsNullOrWhiteSpace(statsMatch.Groups[1].Value))
+                {
+                    progressObj.Speed = statsMatch.Groups[1].Value.Trim();
+                    _logger.LogDebug("Speed Updated: {speed}", progressObj.Speed);
+                    statsUpdated = true;
+                }
+                if (statsMatch.Groups[2].Success && !string.IsNullOrWhiteSpace(statsMatch.Groups[2].Value))
+                {
+                    progressObj.TimeRemaining = statsMatch.Groups[2].Value.Trim();
+                    _logger.LogDebug("Time Remaining Updated: {timeRemaining}", progressObj.TimeRemaining);
+                    statsUpdated = true;
+                }
+                if (statsUpdated)
+                {
+                    reporter?.Report(progressObj);
+                }
+            }
+        }
+
+
         private void CreateFileOperation(SyncProgress progressObj, string operation, string filename, DateTime timestamp)
         {
             try
             {
-                // Instead of trying to use JsonSerializer directly on an anonymous object, we'll build a simple JSON string manually
-                // This avoids the JSON parsing errors we were seeing
+                // Special case for scanning - use plain text without JSON
+                if (progressObj.IsScanning ||
+                    operation.Contains("Scanning", StringComparison.OrdinalIgnoreCase) ||
+                    operation.Contains("KERESÉS", StringComparison.OrdinalIgnoreCase))
+                {
+                    progressObj.CurrentFile = LocalizationManager.Instance["ScanningForChanges"];
+                    return;
+                }
+
+                // For other operations, create JSON string for icon mapping
                 string opKey = GetOperationKey(operation);
-                string json = $"{{\"Operation\":\"{opKey}\",\"Filename\":\"{filename}\",\"Timestamp\":\"{timestamp.ToString("yyyy/MM/dd HH:mm:ss")}\"}}";
+                string json = $"{{\"Operation\":\"{opKey}\",\"Filename\":\"{filename}\",\"Timestamp\":\"{timestamp:yyyy/MM/dd HH:mm:ss}\"}}";
                 progressObj.CurrentFile = json;
             }
             catch (Exception ex)
@@ -409,6 +480,8 @@ namespace DriveSync.Infrastructure.Services
                 progressObj.CurrentFile = filename; // Fallback to just the filename
             }
         }
+
+
 
         private string GetOperationKey(string operation)
         {

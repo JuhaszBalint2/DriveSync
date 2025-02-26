@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Windows.Data;
 using System.Text.Json;
 using FontAwesome.Sharp;
+using DriveSync.WPF.Localization;
 
 namespace DriveSync.WPF.Converters
 {
@@ -12,49 +13,81 @@ namespace DriveSync.WPF.Converters
         {
             if (value is string jsonString)
             {
+                // Special handling for scanning text
+                if (jsonString.Equals(LocalizationManager.Instance["ScanningForChanges"], StringComparison.OrdinalIgnoreCase) ||
+                    jsonString.Contains("SCANNING", StringComparison.OrdinalIgnoreCase) ||
+                    jsonString.Contains("KERESÉS", StringComparison.OrdinalIgnoreCase) ||
+                    jsonString.Contains("Változások keresése", StringComparison.OrdinalIgnoreCase) ||
+                    jsonString.Contains("Scanning for changes", StringComparison.OrdinalIgnoreCase))
+                {
+                    System.Diagnostics.Debug.WriteLine($"Scanning detected in: {jsonString}");
+                    return IconChar.Search;
+                }
+
                 try
                 {
+                    // Regular JSON parsing for other operations
                     var jsonElement = JsonSerializer.Deserialize<JsonElement>(jsonString);
 
-                    // Check for move-related operations
+                    // Check for operation type
                     if (jsonElement.TryGetProperty("Operation", out var operationElement))
                     {
                         string operation = operationElement.GetString()?.ToUpper() ?? string.Empty;
 
-                        // Detect move operations more comprehensively
-                        if (operation.Contains("MOVE") ||
-                            operation.Contains("ÁTHELYEZÉS") ||
-                            (jsonElement.TryGetProperty("Description", out var descElement) &&
-                             descElement.GetString()?.Contains("move", StringComparison.OrdinalIgnoreCase) == true))
+                        // Handle scanning operation
+                        if (operation.Contains("SCAN") || operation.Contains("KERES"))
                         {
-                            return IconChar.FileImport;
+                            return IconChar.Search;
                         }
+
+                        // Return appropriate icon for operation
+                        IconChar iconChar = operation switch
+                        {
+                            var s when s.Contains("COPY") || s.Contains("MÁSOLÁS") => IconChar.Copy,
+                            var s when s.Contains("DELETE") || s.Contains("TÖRLÉS") => IconChar.TrashAlt,
+                            var s when s.Contains("SKIP") || s.Contains("KIHAGYÁS") => IconChar.Ban,
+                            var s when s.Contains("MOVE") || s.Contains("ÁTHELYEZÉS") => IconChar.FileImport,
+                            var s when s.Contains("SCAN") || s.Contains("KERES") => IconChar.Search,
+                            _ => IconChar.QuestionCircle
+                        };
+
+                        System.Diagnostics.Debug.WriteLine($"Convert input: {jsonString}, Selected icon: {iconChar}");
+                        return iconChar;
                     }
-
-                    // Fallback to existing operation detection
-                    string fallbackOperation = jsonElement.TryGetProperty("Operation", out var operationFallback)
-                        ? operationFallback.GetString()?.ToUpper() ?? string.Empty
-                        : string.Empty;
-
-                    IconChar iconChar = fallbackOperation switch
-                    {
-                        "COPYING FILES" or "MÁSOLÁS" or "COPY" => IconChar.Copy,
-                        "DELETING FILES" or "TÖRLÉS" or "DELETE" => IconChar.TrashAlt,
-                        "SKIPPING FILES" or "KIHAGYÁS" or "SKIP" => IconChar.Ban,
-                        "MOVING FILES" or "ÁTHELYEZÉS" or "MOVE" => IconChar.FileImport,
-                        _ => IconChar.QuestionCircle
-                    };
-
-                    System.Diagnostics.Debug.WriteLine($"Convert input: {jsonString}, Selected icon: {iconChar}");
-                    return iconChar;
                 }
                 catch (Exception ex)
                 {
+                    // Handle JSON parsing errors by checking for scanning text
                     System.Diagnostics.Debug.WriteLine($"Error in converter: {ex.Message}");
+
+                    // If it's not valid JSON, check directly for scanning-related text
+                    if (jsonString.Contains("SCAN", StringComparison.OrdinalIgnoreCase) ||
+                        jsonString.Contains("KERES", StringComparison.OrdinalIgnoreCase) ||
+                        jsonString.Contains("Változások", StringComparison.OrdinalIgnoreCase) ||
+                        jsonString.Contains("Scanning", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return IconChar.Search;
+                    }
+
                     return IconChar.QuestionCircle;
                 }
             }
-            System.Diagnostics.Debug.WriteLine("Convert input is not a string");
+
+            // Handle non-string values or direct scanning text comparison
+            if (value != null)
+            {
+                string valueStr = value.ToString();
+                if (valueStr.Equals(LocalizationManager.Instance["ScanningForChanges"], StringComparison.OrdinalIgnoreCase) ||
+                    valueStr.Contains("SCAN", StringComparison.OrdinalIgnoreCase) ||
+                    valueStr.Contains("KERES", StringComparison.OrdinalIgnoreCase) ||
+                    valueStr.Contains("Változás", StringComparison.OrdinalIgnoreCase) ||
+                    valueStr.Contains("Scanning", StringComparison.OrdinalIgnoreCase))
+                {
+                    return IconChar.Search;
+                }
+            }
+
+            System.Diagnostics.Debug.WriteLine("Convert input is not recognized: " + (value?.ToString() ?? "null"));
             return IconChar.QuestionCircle;
         }
 

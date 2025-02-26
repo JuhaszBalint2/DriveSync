@@ -2,6 +2,7 @@
 using System.Text.Json;
 using System.Windows.Data;
 using System.Globalization;
+using DriveSync.WPF.Localization;
 
 namespace DriveSync.WPF.Converters
 {
@@ -11,9 +12,18 @@ namespace DriveSync.WPF.Converters
         {
             try
             {
-                if (value is string json)
+                if (value is string textValue)
                 {
-                    var obj = JsonSerializer.Deserialize<JsonElement>(json);
+                    // Check if the value is a scanning message
+                    if (textValue.Equals(LocalizationManager.Instance["ScanningForChanges"], StringComparison.OrdinalIgnoreCase) ||
+                        textValue.Contains("Változások keresése", StringComparison.OrdinalIgnoreCase) ||
+                        textValue.Contains("Scanning for changes", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return LocalizationManager.Instance["ScanningOperation"];
+                    }
+
+                    // Regular JSON parsing for operation
+                    var obj = JsonSerializer.Deserialize<JsonElement>(textValue);
                     return obj.GetProperty("Operation").GetString() ?? string.Empty;
                 }
             }
@@ -33,14 +43,23 @@ namespace DriveSync.WPF.Converters
         {
             try
             {
-                if (value is string json)
+                if (value is string textValue)
                 {
-                    var obj = JsonSerializer.Deserialize<JsonElement>(json);
+                    // Check if the value is a scanning message
+                    if (textValue.Equals(LocalizationManager.Instance["ScanningForChanges"], StringComparison.OrdinalIgnoreCase) ||
+                        textValue.Contains("Változások keresése", StringComparison.OrdinalIgnoreCase) ||
+                        textValue.Contains("Scanning for changes", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return textValue;
+                    }
+
+                    // Regular JSON parsing for filename
+                    var obj = JsonSerializer.Deserialize<JsonElement>(textValue);
                     return obj.GetProperty("Filename").GetString() ?? string.Empty;
                 }
             }
             catch { }
-            return string.Empty;
+            return value as string ?? string.Empty;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -55,9 +74,18 @@ namespace DriveSync.WPF.Converters
         {
             try
             {
-                if (value is string json)
+                if (value is string textValue)
                 {
-                    var obj = JsonSerializer.Deserialize<JsonElement>(json);
+                    // Check if the value is a scanning message
+                    if (textValue.Equals(LocalizationManager.Instance["ScanningForChanges"], StringComparison.OrdinalIgnoreCase) ||
+                        textValue.Contains("Változások keresése", StringComparison.OrdinalIgnoreCase) ||
+                        textValue.Contains("Scanning for changes", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
+                    }
+
+                    // Regular JSON parsing for timestamp
+                    var obj = JsonSerializer.Deserialize<JsonElement>(textValue);
                     return obj.GetProperty("Timestamp").GetString() ?? string.Empty;
                 }
             }
