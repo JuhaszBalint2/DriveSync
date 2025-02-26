@@ -16,17 +16,32 @@ namespace DriveSync.WPF.Converters
                 {
                     var jsonElement = JsonSerializer.Deserialize<JsonElement>(jsonString);
 
-                    // Safely extract the operation, defaulting to empty string if not found
-                    string operation = jsonElement.TryGetProperty("Operation", out var operationElement)
-                        ? operationElement.GetString()?.ToUpper() ?? string.Empty
+                    // Check for move-related operations
+                    if (jsonElement.TryGetProperty("Operation", out var operationElement))
+                    {
+                        string operation = operationElement.GetString()?.ToUpper() ?? string.Empty;
+
+                        // Detect move operations more comprehensively
+                        if (operation.Contains("MOVE") ||
+                            operation.Contains("ÁTHELYEZÉS") ||
+                            (jsonElement.TryGetProperty("Description", out var descElement) &&
+                             descElement.GetString()?.Contains("move", StringComparison.OrdinalIgnoreCase) == true))
+                        {
+                            return IconChar.FileImport;
+                        }
+                    }
+
+                    // Fallback to existing operation detection
+                    string fallbackOperation = jsonElement.TryGetProperty("Operation", out var operationFallback)
+                        ? operationFallback.GetString()?.ToUpper() ?? string.Empty
                         : string.Empty;
 
-                    IconChar iconChar = operation switch
+                    IconChar iconChar = fallbackOperation switch
                     {
-                        "COPYING FILES" or "MÁSOLÁS" => IconChar.Copy,
-                        "DELETING FILES" or "TÖRLÉS" => IconChar.TrashAlt,
-                        "SKIPPING FILES" or "KIHAGYÁS" => IconChar.Ban,
-                        "MOVING FILES" or "ÁTHELYEZÉS" => IconChar.FileImport,
+                        "COPYING FILES" or "MÁSOLÁS" or "COPY" => IconChar.Copy,
+                        "DELETING FILES" or "TÖRLÉS" or "DELETE" => IconChar.TrashAlt,
+                        "SKIPPING FILES" or "KIHAGYÁS" or "SKIP" => IconChar.Ban,
+                        "MOVING FILES" or "ÁTHELYEZÉS" or "MOVE" => IconChar.FileImport,
                         _ => IconChar.QuestionCircle
                     };
 
