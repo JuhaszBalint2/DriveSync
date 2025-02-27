@@ -245,7 +245,7 @@ namespace DriveSync.WPF.ViewModels
                 StatusIndicatorBrush = ColorDelete;
             };
 
-            _rcloneManager.RclonePathChanged += (sender, path) =>
+            _rcloneManager.RclonePathChanged += async (sender, path) =>
             {
                 string version = ExtractVersionFromPath(path);
                 UpdateMessage = $"rclone v{version}";
@@ -253,7 +253,7 @@ namespace DriveSync.WPF.ViewModels
                 StatusIndicatorBrush = ColorCheck;
 
                 // Update RcloneVersion when path changes
-                RcloneVersion = version;
+                await GetRcloneVersion();
             };
 
             AvailableSyncModes = new ObservableCollection<SyncTypeOption>
@@ -311,7 +311,7 @@ namespace DriveSync.WPF.ViewModels
         {
             if (string.IsNullOrEmpty(path)) return "Unknown";
 
-            var match = Regex.Match(path, @"v(\d+\.\d+\.\d+)");
+            var match = Regex.Match(path, @"[vV](\d+\.\d+\.\d+)");
             return match.Success ? match.Groups[1].Value : "Unknown";
         }
 
@@ -387,7 +387,7 @@ namespace DriveSync.WPF.ViewModels
                 return;
             }
 
-            // Create a new window to display sync history
+            // Create a new window to display sync history  
             var historyListWindow = new SyncHistoryListWindow(SyncHistory);
             historyListWindow.Owner = Application.Current.MainWindow;
             historyListWindow.ShowDialog();
@@ -619,7 +619,7 @@ namespace DriveSync.WPF.ViewModels
                         _ => LocalizationManager.Instance["ScanningForChanges"]
                     };
 
-                    // Set the appropriate status color
+                    // Set the appropriate status color  
                     StatusIndicatorBrush = operationKey switch
                     {
                         "CHECK" => ColorCheck,
