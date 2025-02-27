@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -81,87 +84,90 @@ namespace DriveSync.WPF.ViewModels
         // History file configuration
         private const string HistoryFileName = "syncHistory.json";
 
-        // Observable collections and properties for UI binding
+        // Observable properties
         [ObservableProperty]
-        private ObservableCollection<string> availableRemotes = new();
+        private string _rcloneVersion = "Unknown";
+
+        [ObservableProperty]
+        private ObservableCollection<string> _availableRemotes = new();
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsValid))]
-        private string selectedSourceRemote;
+        private string _selectedSourceRemote;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsValid))]
-        private string selectedTargetRemote;
+        private string _selectedTargetRemote;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsValid))]
-        private string sourcePath;
+        private string _sourcePath;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsValid))]
-        private string targetPath;
-
-        // Status and progress properties
-        [ObservableProperty]
-        private string statusMessage = "Loading remotes...";
+        private string _targetPath;
 
         [ObservableProperty]
-        private string updateMessage = "";
+        private string _statusMessage = "Loading remotes...";
 
         [ObservableProperty]
-        private string currentSyncOperation;
+        private string _updateMessage = "";
 
         [ObservableProperty]
-        private bool isSyncing;
+        private string _currentSyncOperation;
 
         [ObservableProperty]
-        private double progressValue;
+        private bool _isSyncing;
 
         [ObservableProperty]
-        private string currentFile = "";
+        private double _progressValue;
 
         [ObservableProperty]
-        private string currentSpeed = "";
+        private string _currentFile = "";
 
         [ObservableProperty]
-        private string remainingTime = "";
+        private string _currentSpeed = "";
 
         [ObservableProperty]
-        private string progressPercentage = "";
+        private string _remainingTime = "";
 
         [ObservableProperty]
-        private ObservableCollection<SyncHistoryItem> syncHistory = new();
+        private string _progressPercentage = "";
 
         [ObservableProperty]
-        private Brush statusIndicatorBrush = new SolidColorBrush(Colors.Blue);
+        private ObservableCollection<SyncHistoryItem> _syncHistory = new();
 
         [ObservableProperty]
-        private ObservableCollection<SyncTypeOption> availableSyncModes = new();
+        private Brush _statusIndicatorBrush = new SolidColorBrush(Colors.Blue);
 
         [ObservableProperty]
-        private SyncTypeOption selectedSyncMode;
+        private ObservableCollection<SyncTypeOption> _availableSyncModes = new();
 
         [ObservableProperty]
-        private string buttonText;
+        private SyncTypeOption _selectedSyncMode;
 
         [ObservableProperty]
-        private bool isUpdateAvailable;
+        private string _buttonText;
 
         [ObservableProperty]
-        private bool isCheckingForUpdates;
+        private bool _isUpdateAvailable;
 
         [ObservableProperty]
-        private string currentSpeedColor;
+        private bool _isCheckingForUpdates;
 
         [ObservableProperty]
-        private string currentETAColor;
+        private string _currentSpeedColor;
 
         [ObservableProperty]
-        private string currentFileColor;
+        private string _currentETAColor;
 
         [ObservableProperty]
-        private string currentDateColor;
+        private string _currentFileColor;
 
+        [ObservableProperty]
+        private string _currentDateColor;
+
+        // Property changed handlers
         partial void OnIsSyncingChanged(bool value)
         {
             ButtonText = value ?
@@ -169,12 +175,50 @@ namespace DriveSync.WPF.ViewModels
                 LocalizationManager.Instance["SyncNow"];
         }
 
+        // Validation property
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(SelectedSourceRemote) &&
             !string.IsNullOrWhiteSpace(SelectedTargetRemote) &&
             !string.IsNullOrWhiteSpace(SourcePath) &&
             !string.IsNullOrWhiteSpace(TargetPath);
 
+        // Rclone version retrieval method
+        private async Task GetRcloneVersion()
+        {
+            try
+            {
+                using var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = "rclone",
+                        Arguments = "version",
+                        RedirectStandardOutput = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        StandardOutputEncoding = System.Text.Encoding.UTF8
+                    }
+                };
+
+                process.Start();
+                string output = await process.StandardOutput.ReadToEndAsync();
+                await process.WaitForExitAsync();
+
+                // Parse the version from the output
+                var versionMatch = Regex.Match(output, @"rclone\s+v(\d+\.\d+\.\d+)");
+                if (versionMatch.Success)
+                {
+                    RcloneVersion = versionMatch.Groups[1].Value;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get rclone version");
+                RcloneVersion = "Unknown";
+            }
+        }
+
+        // Constructor
         public MainViewModel(
             IRcloneService rcloneService,
             ILogger<MainViewModel> logger,
@@ -187,7 +231,6 @@ namespace DriveSync.WPF.ViewModels
             _loggerFactory = loggerFactory;
             _rcloneManager = rcloneManager;
             _rcloneVersionService = rcloneVersionService;
-
 
             // Subscribe to RcloneManager events
             _rcloneManager.DownloadProgress += (sender, progress) =>
@@ -206,8 +249,11 @@ namespace DriveSync.WPF.ViewModels
             {
                 string version = ExtractVersionFromPath(path);
                 UpdateMessage = $"rclone v{version}";
-                StatusMessage = $"{AvailableRemotes.Count} felhő tárhely betöltve"; // Changed from "Using rclone v{version}"
+                StatusMessage = $"{AvailableRemotes.Count} felhő tárhely betöltve";
                 StatusIndicatorBrush = ColorCheck;
+
+                // Update RcloneVersion when path changes
+                RcloneVersion = version;
             };
 
             AvailableSyncModes = new ObservableCollection<SyncTypeOption>
@@ -256,6 +302,17 @@ namespace DriveSync.WPF.ViewModels
             ApplyTheme(settings.Theme);
             LoadRemotesAsync();
             LoadHistory();
+
+            // Ensure we get the rclone version
+            GetRcloneVersion().ConfigureAwait(false);
+        }
+
+        private string ExtractVersionFromPath(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return "Unknown";
+
+            var match = Regex.Match(path, @"v(\d+\.\d+\.\d+)");
+            return match.Success ? match.Groups[1].Value : "Unknown";
         }
 
         [RelayCommand]
@@ -279,14 +336,6 @@ namespace DriveSync.WPF.ViewModels
             {
                 IsCheckingForUpdates = false;
             }
-        }
-
-        private string ExtractVersionFromPath(string path)
-        {
-            if (string.IsNullOrEmpty(path)) return "unknown";
-
-            var match = System.Text.RegularExpressions.Regex.Match(path, @"v(\d+\.\d+\.\d+)");
-            return match.Success ? match.Groups[1].Value : "unknown";
         }
 
         private void LoadHistory()
@@ -344,7 +393,6 @@ namespace DriveSync.WPF.ViewModels
             historyListWindow.ShowDialog();
         }
 
-
         [RelayCommand]
         private void OpenSettings()
         {
@@ -365,158 +413,6 @@ namespace DriveSync.WPF.ViewModels
                     SelectedSyncMode = newDefault;
                 }
                 ApplyTheme(settings.Theme);
-            }
-        }
-
-        private System.Windows.Threading.DispatcherTimer _statusMessageTimer;
-
-        [RelayCommand]
-        private async Task BrowseSourceAsync()
-        {
-            _statusMessageTimer?.Stop();
-
-            if (string.IsNullOrWhiteSpace(SelectedSourceRemote))
-            {
-                StatusMessage = LocalizationManager.Instance["PleaseSelectSourceRemoteFirst"];
-                StatusIndicatorBrush = ColorDelete;
-
-                _statusMessageTimer = new System.Windows.Threading.DispatcherTimer
-                {
-                    Interval = TimeSpan.FromSeconds(3)
-                };
-                _statusMessageTimer.Tick += (s, e) =>
-                {
-                    if (StatusMessage == LocalizationManager.Instance["PleaseSelectSourceRemoteFirst"])
-                    {
-                        StatusMessage = string.Empty;
-                        StatusIndicatorBrush = ColorCheck;
-                    }
-                    _statusMessageTimer.Stop();
-                };
-                _statusMessageTimer.Start();
-                return;
-            }
-
-            try
-            {
-                var browserLogger = _loggerFactory.CreateLogger<DirectoryBrowserViewModel>();
-                var viewModel = new DirectoryBrowserViewModel(_rcloneService, browserLogger, SelectedSourceRemote);
-                var dialog = new DirectoryBrowserDialog(viewModel);
-                if (dialog.ShowDialog() == true)
-                {
-                    if (StatusMessage == LocalizationManager.Instance["PleaseSelectSourceRemoteFirst"])
-                    {
-                        StatusMessage = string.Empty;
-                        _statusMessageTimer?.Stop();
-                    }
-
-                    SourcePath = dialog.SelectedPath;
-                    StatusMessage = string.Format(
-                        LocalizationManager.Instance["SelectedSourcePath"],
-                        SourcePath
-                    );
-                    StatusIndicatorBrush = ColorCheck;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error browsing source directory");
-                StatusMessage = "Error browsing directory. Please try again.";
-                StatusIndicatorBrush = ColorDelete;
-            }
-        }
-
-        [RelayCommand]
-        private async Task BrowseTargetAsync()
-        {
-            _statusMessageTimer?.Stop();
-
-            if (string.IsNullOrWhiteSpace(SelectedTargetRemote))
-            {
-                StatusMessage = LocalizationManager.Instance["PleaseSelectTargetRemoteFirst"];
-                StatusIndicatorBrush = ColorDelete;
-
-                _statusMessageTimer = new System.Windows.Threading.DispatcherTimer
-                {
-                    Interval = TimeSpan.FromSeconds(3)
-                };
-                _statusMessageTimer.Tick += (s, e) =>
-                {
-                    if (StatusMessage == LocalizationManager.Instance["PleaseSelectTargetRemoteFirst"])
-                    {
-                        StatusMessage = string.Empty;
-                        StatusIndicatorBrush = ColorCheck;
-                    }
-                    _statusMessageTimer.Stop();
-                };
-                _statusMessageTimer.Start();
-                return;
-            }
-
-            try
-            {
-                var browserLogger = _loggerFactory.CreateLogger<DirectoryBrowserViewModel>();
-                var viewModel = new DirectoryBrowserViewModel(_rcloneService, browserLogger, SelectedTargetRemote);
-                var dialog = new DirectoryBrowserDialog(viewModel);
-                if (dialog.ShowDialog() == true)
-                {
-                    if (StatusMessage == LocalizationManager.Instance["PleaseSelectTargetRemoteFirst"])
-                    {
-                        StatusMessage = string.Empty;
-                        _statusMessageTimer?.Stop();
-                    }
-
-                    TargetPath = dialog.SelectedPath;
-                    StatusMessage = string.Format(
-                        LocalizationManager.Instance["SelectedTargetPath"],
-                        TargetPath
-                    );
-                    StatusIndicatorBrush = ColorCheck;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error browsing target directory");
-                StatusMessage = "Error browsing directory. Please try again.";
-                StatusIndicatorBrush = ColorDelete;
-            }
-        }
-
-        partial void OnSelectedSourceRemoteChanged(string? value)
-        {
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                _statusMessageTimer?.Stop();
-
-                if (StatusMessage == LocalizationManager.Instance["PleaseSelectSourceRemoteFirst"])
-                {
-                    StatusMessage = string.Empty;
-                }
-
-                StatusMessage = string.Format(
-                    LocalizationManager.Instance["SourceRemoteSelected"],
-                    value
-                );
-                StatusIndicatorBrush = ColorCheck;
-            }
-        }
-
-        partial void OnSelectedTargetRemoteChanged(string? value)
-        {
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                _statusMessageTimer?.Stop();
-
-                if (StatusMessage == LocalizationManager.Instance["PleaseSelectTargetRemoteFirst"])
-                {
-                    StatusMessage = string.Empty;
-                }
-
-                StatusMessage = string.Format(
-                    LocalizationManager.Instance["TargetRemoteSelected"],
-                    value
-                );
-                StatusIndicatorBrush = ColorCheck;
             }
         }
 
@@ -765,42 +661,13 @@ namespace DriveSync.WPF.ViewModels
                     RemainingTime = !string.IsNullOrWhiteSpace(progress.TimeRemaining)
                         ? progress.TimeRemaining
                         : LocalizationManager.Instance["CalculatingTime"];
-
                 }
-
-
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating sync progress");
             }
         }
-
-        private async Task HandleRcloneUpdate()
-        {
-            try
-            {
-                var updateInfo = await _rcloneVersionService.CheckForUpdate();
-
-                if (updateInfo.IsUpdateAvailable)
-                {
-                    // Show blocking update dialog
-                    var updateDialog = new UpdateAvailableWindow(
-                        updateInfo.CurrentVersion,
-                        updateInfo.LatestVersion
-                    );
-                    updateDialog.Owner = Application.Current.MainWindow;
-                    updateDialog.ShowDialog();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error handling rclone update");
-                MessageBox.Show($"Update check failed: {ex.Message}", "Update Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-
 
         public void ApplyTheme(string themeName)
         {

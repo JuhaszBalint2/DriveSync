@@ -464,14 +464,24 @@
         </Grid>
 
         <Grid Grid.Row="2" 
-              Background="{DynamicResource SurfaceBrush}"
-              Height="24">
-            <TextBlock Text="{Binding UpdateMessage}"
+          Background="{DynamicResource SurfaceBrush}"
+          Height="24">
+            <StackPanel Orientation="Horizontal" 
+                    HorizontalAlignment="Right" 
+                    Margin="0,0,20,0">
+                <TextBlock Text="{Binding UpdateMessage}"
                        HorizontalAlignment="Right"
                        VerticalAlignment="Center"
-                       Margin="0,0,20,0"
+                       FontSize="10"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       Margin="0,0,10,0"/>
+
+                <TextBlock Text="{Binding RcloneVersion, StringFormat='Rclone v{0}'}"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Center"
                        FontSize="10"
                        Foreground="{DynamicResource TextSecondaryBrush}"/>
+            </StackPanel>
         </Grid>
     </Grid>
 </views:ModernWindowBase>
