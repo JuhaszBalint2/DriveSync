@@ -148,23 +148,50 @@ namespace DriveSync.WPF
                     if (result != true)
                     {
                         logger.LogWarning("Download was not successful");
-                        // If we have no version at all, we can't continue
+                        // If we have no version at all and download failed, try to get the second latest version
                         if (!currentVersionExists && !latestVersionExists)
                         {
-                            logger.LogError("No local version available, application will now exit");
-                            MessageBox.Show(
-                                "Failed to download required files. Please check your internet connection and try again.",
-                                "Critical Error",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Error
-                            );
-                            Shutdown();
-                            return;
+                            logger.LogInformation("No local version available, trying to download second latest version");
+
+                            // Get available releases
+                            var availableReleases = await versionService.GetAvailableReleases(5);
+
+                            if (availableReleases.Count > 1)
+                            {
+                                string secondLatestVersion = availableReleases[1]; // Index 1 is the second latest
+                                logger.LogInformation($"Attempting to download version {secondLatestVersion}");
+
+                                // Show blocking update window for second latest version
+                                var fallbackUpdateWindow = new UpdateAvailableWindow(currentVersion, secondLatestVersion, true);
+                                fallbackUpdateWindow.Owner = null;
+                                bool? fallbackResult = fallbackUpdateWindow.ShowDialog();
+
+                                if (fallbackResult != true)
+                                {
+                                    logger.LogError("Failed to download both latest and second latest versions, application will now exit");
+                                    MessageBox.Show(
+                                        "Failed to download required files after multiple attempts. Please check your internet connection and try again.",
+                                        "Critical Error",
+                                        MessageBoxButton.OK,
+                                        MessageBoxImage.Error
+                                    );
+                                    Shutdown();
+                                    return;
+                                }
+                            }
+                            else
+                            {
+                                logger.LogError("No alternative versions available, application will now exit");
+                                MessageBox.Show(
+                                    "Failed to download required files. Please check your internet connection and try again.",
+                                    "Critical Error",
+                                    MessageBoxButton.OK,
+                                    MessageBoxImage.Error
+                                );
+                                Shutdown();
+                                return;
+                            }
                         }
-                    }
-                    else
-                    {
-                        logger.LogInformation("Download was successful, continuing with startup");
                     }
                 }
                 else

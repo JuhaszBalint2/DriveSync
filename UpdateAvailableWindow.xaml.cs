@@ -16,10 +16,11 @@ namespace DriveSync.WPF.Views
         private readonly string _currentVersion;
         private readonly string _targetVersion;
         private readonly bool _isInitialInstall;
+        private readonly bool _isFallbackVersion;
 
         public string UpdateMessage { get; set; }
 
-        public UpdateAvailableWindow(string currentVersion, string targetVersion)
+        public UpdateAvailableWindow(string currentVersion, string targetVersion, bool isFallbackVersion = false)
         {
             InitializeComponent();
 
@@ -30,6 +31,7 @@ namespace DriveSync.WPF.Views
 
             _currentVersion = currentVersion;
             _targetVersion = targetVersion;
+            _isFallbackVersion = isFallbackVersion;
 
             // Check if this is an initial install (no local version)
             string baseDirectory = Path.Combine(
@@ -49,13 +51,29 @@ namespace DriveSync.WPF.Views
             // Set appropriate message based on whether this is initial install or update
             if (_isInitialInstall)
             {
-                Title = "Rclone Installation";
-                UpdateMessage = $"Rclone needs to be installed.\nDownloading version: {targetVersion}";
+                if (_isFallbackVersion)
+                {
+                    Title = "Alternative Rclone Installation";
+                    UpdateMessage = $"Initial download failed. Trying alternative version.\nDownloading version: {targetVersion}";
+                }
+                else
+                {
+                    Title = "Rclone Installation";
+                    UpdateMessage = $"Rclone needs to be installed.\nDownloading version: {targetVersion}";
+                }
             }
             else
             {
-                Title = "Rclone Update";
-                UpdateMessage = $"Current Version: {currentVersion}\nLatest Version: {targetVersion}";
+                if (_isFallbackVersion)
+                {
+                    Title = "Alternative Rclone Update";
+                    UpdateMessage = $"Latest version download failed. Trying alternative version.\nDownloading version: {targetVersion}";
+                }
+                else
+                {
+                    Title = "Rclone Update";
+                    UpdateMessage = $"Current Version: {currentVersion}\nLatest Version: {targetVersion}";
+                }
             }
 
             // Prevent window from being closed by user
@@ -74,7 +92,7 @@ namespace DriveSync.WPF.Views
         {
             try
             {
-                _logger?.LogInformation($"Starting {(_isInitialInstall ? "installation" : "update")} of version {_targetVersion}");
+                _logger?.LogInformation($"Starting {(_isInitialInstall ? "installation" : "update")} of version {_targetVersion} (Fallback: {_isFallbackVersion})");
                 string baseDirectory = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "DriveSync",
@@ -100,7 +118,16 @@ namespace DriveSync.WPF.Views
                 });
 
                 _logger?.LogInformation($"Downloading rclone v{_targetVersion} to {downloadPath}");
-                bool downloaded = await _versionService.DownloadLatestRclone(downloadPath, progress);
+
+                bool downloaded;
+                if (_isFallbackVersion)
+                {
+                    downloaded = await _versionService.DownloadSpecificVersion(_targetVersion, downloadPath, progress);
+                }
+                else
+                {
+                    downloaded = await _versionService.DownloadLatestRclone(downloadPath, progress);
+                }
 
                 if (downloaded)
                 {

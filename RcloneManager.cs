@@ -125,9 +125,61 @@ namespace DriveSync.Infrastructure.Services
                     }
                     else
                     {
-                        _logger.LogWarning("Failed to download latest version, using existing rclone");
-                        StatusMessage?.Invoke(this, "Update failed, using existing version");
-                        CurrentRclonePath = GetExistingRclonePath(currentVersion) ?? "rclone";
+                        _logger.LogWarning("Failed to download latest version, trying second latest version...");
+                        StatusMessage?.Invoke(this, "Update failed, trying earlier version...");
+
+                        // Try to get available releases
+                        var availableReleases = await _versionService.GetAvailableReleases(5);
+                        if (availableReleases.Count > 1)
+                        {
+                            string secondLatestVersion = availableReleases[1]; // Index 1 is the second latest
+
+                            _logger.LogInformation($"Trying to download second latest version: v{secondLatestVersion}");
+                            StatusMessage?.Invoke(this, $"Downloading rclone v{secondLatestVersion}...");
+
+                            string secondDownloadPath = Path.Combine(
+                                _baseDirectory,
+                                $"rclone-v{secondLatestVersion}-windows-amd64.zip"
+                            );
+
+                            bool secondDownloaded = await DownloadSecondLatestVersion(secondDownloadPath, secondLatestVersion, progress);
+                            if (secondDownloaded)
+                            {
+                                string secondExtractedPath = Path.Combine(
+                                    _baseDirectory,
+                                    $"v{secondLatestVersion}",
+                                    "rclone.exe"
+                                );
+
+                                if (await ValidateExtractedFile(secondExtractedPath))
+                                {
+                                    CurrentRclonePath = secondExtractedPath;
+                                    await CleanupOldVersionsAsync(secondLatestVersion);
+                                    StatusMessage?.Invoke(this, $"Successfully downloaded rclone v{secondLatestVersion}");
+                                    OperationResult?.Invoke(this, ($"Installed rclone v{secondLatestVersion}", false));
+                                }
+                                else
+                                {
+                                    // Fall back to current version or system rclone if validation fails
+                                    StatusMessage?.Invoke(this, "Error validating downloaded version");
+                                    CurrentRclonePath = GetExistingRclonePath(currentVersion) ?? "rclone";
+                                }
+                            }
+                            else
+                            {
+                                // Fall back to current version or system rclone if download fails
+                                _logger.LogWarning("Failed to download second latest version, using existing rclone");
+                                StatusMessage?.Invoke(this, "Update failed, using existing version");
+                                CurrentRclonePath = GetExistingRclonePath(currentVersion) ?? "rclone";
+                            }
+                        }
+                        else
+                        {
+                            // Fall back to current version or system rclone if no second latest available
+                            _logger.LogWarning("No second latest version available, using existing rclone");
+                            StatusMessage?.Invoke(this, "Update failed, using existing version");
+                            CurrentRclonePath = GetExistingRclonePath(currentVersion) ?? "rclone";
+                        }
                     }
                 }
                 else
@@ -177,6 +229,32 @@ namespace DriveSync.Infrastructure.Services
                     if (attempt == MAX_RETRIES)
                     {
                         OperationResult?.Invoke(this, ($"Failed to download after {MAX_RETRIES} attempts", true));
+                        return false;
+                    }
+                    await Task.Delay(RETRY_DELAY_MS * attempt);
+                }
+            }
+            return false;
+        }
+
+        private async Task<bool> DownloadSecondLatestVersion(string downloadPath, string version, IProgress<double> progress)
+        {
+            for (int attempt = 1; attempt <= MAX_RETRIES; attempt++)
+            {
+                try
+                {
+                    if (await _versionService.DownloadSpecificVersion(version, downloadPath, progress))
+                    {
+                        string extractPath = Path.Combine(_baseDirectory, $"v{version}");
+                        return await ExtractRclone(downloadPath, extractPath);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Download attempt {attempt} for version {version} failed");
+                    if (attempt == MAX_RETRIES)
+                    {
+                        OperationResult?.Invoke(this, ($"Failed to download version {version} after {MAX_RETRIES} attempts", true));
                         return false;
                     }
                     await Task.Delay(RETRY_DELAY_MS * attempt);

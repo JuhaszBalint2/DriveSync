@@ -40,9 +40,11 @@ namespace DriveSync.Infrastructure.Services
         Task<(bool IsUpdateAvailable, string LatestVersion, string CurrentVersion)> CheckForUpdate();
         Task<(bool IsUpdateAvailable, string LatestVersion, string CurrentVersion)> CheckRcloneVersion();
         Task<bool> DownloadLatestRclone(string downloadPath, IProgress<double> progress = null);
+        Task<bool> DownloadSpecificVersion(string version, string downloadPath, IProgress<double> progress = null);
         Task<bool> ValidateRcloneFile(string filePath);
         Task<bool> RollbackToVersion(string version);
         Task<bool> CanRollbackToVersion(string version);
+        Task<List<string>> GetAvailableReleases(int count = 5);
         event EventHandler<string> VersionCheckError;
         event EventHandler<(string Message, RcloneErrorType ErrorType)> ErrorOccurred;
     }
@@ -53,6 +55,7 @@ namespace DriveSync.Infrastructure.Services
         private readonly HttpClient _httpClient;
         private const string GITHUB_API_URL = "https://api.github.com";
         private const string GITHUB_RELEASE_URL = "/repos/rclone/rclone/releases/latest";
+        private const string GITHUB_RELEASES_URL = "/repos/rclone/rclone/releases";
         private const int MAX_RETRIES = 3;
         private const int RETRY_DELAY_MS = 1000;
         private DateTime _lastApiCall = DateTime.MinValue;
@@ -183,6 +186,31 @@ namespace DriveSync.Infrastructure.Services
             throw new RcloneVersionException("Maximum retry attempts exceeded", RcloneErrorType.NetworkError);
         }
 
+        public async Task<List<string>> GetAvailableReleases(int count = 5)
+        {
+            try
+            {
+                await EnsureApiRateLimit();
+
+                var response = await _httpClient.GetAsync(GITHUB_RELEASES_URL);
+                response.EnsureSuccessStatusCode();
+
+                var content = await response.Content.ReadAsStringAsync();
+                var releases = JsonSerializer.Deserialize<List<GitHubRelease>>(content);
+
+                return releases
+                    .Select(r => r.tag_name.TrimStart('v'))
+                    .Take(count)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching available releases");
+                OnErrorOccurred($"Error fetching release history: {ex.Message}", RcloneErrorType.NetworkError);
+                return new List<string>();
+            }
+        }
+
         public async Task<bool> DownloadLatestRclone(string downloadPath, IProgress<double> progress = null)
         {
             int retryCount = 0;
@@ -236,6 +264,90 @@ namespace DriveSync.Infrastructure.Services
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, $"Error downloading rclone (attempt {retryCount + 1}/{MAX_RETRIES})");
+                    if (retryCount == MAX_RETRIES - 1)
+                    {
+                        OnErrorOccurred($"Download failed: {ex.Message}", RcloneErrorType.DownloadError);
+                        return false;
+                    }
+                    retryCount++;
+                    await Task.Delay(RETRY_DELAY_MS * retryCount);
+                }
+            }
+            return false;
+        }
+
+        public async Task<bool> DownloadSpecificVersion(string version, string downloadPath, IProgress<double> progress = null)
+        {
+            int retryCount = 0;
+            long? resumePosition = 0;
+
+            while (retryCount < MAX_RETRIES)
+            {
+                try
+                {
+                    await EnsureApiRateLimit();
+
+                    // Get the specific release by tag
+                    var response = await _httpClient.GetAsync($"/repos/rclone/rclone/releases/tags/v{version}");
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        // If specific tag not found, try to get all releases
+                        _logger.LogWarning($"Specific release v{version} not found, searching in all releases");
+                        var releases = await GetAvailableReleases(10);
+                        if (!releases.Contains(version))
+                        {
+                            OnErrorOccurred($"Version {version} not found in available releases", RcloneErrorType.DownloadError);
+                            return false;
+                        }
+                    }
+
+                    var content = await response.Content.ReadAsStringAsync();
+                    var release = JsonSerializer.Deserialize<GitHubRelease>(content);
+
+                    if (release == null)
+                    {
+                        OnErrorOccurred($"Could not parse release information for version {version}", RcloneErrorType.DownloadError);
+                        return false;
+                    }
+
+                    var downloadAsset = Array.Find(release.assets,
+                        a => a.name.Contains("windows-amd64.zip", StringComparison.OrdinalIgnoreCase));
+
+                    if (downloadAsset == null)
+                    {
+                        OnErrorOccurred($"Windows release package not found for version {version}", RcloneErrorType.DownloadError);
+                        return false;
+                    }
+
+                    bool downloadSuccess = await DownloadFileWithProgress(
+                        downloadAsset.browser_download_url,
+                        downloadPath,
+                        progress,
+                        resumePosition);
+
+                    if (downloadSuccess)
+                    {
+                        if (await ValidateRcloneFile(downloadPath))
+                        {
+                            await SaveVersionHistory(release.tag_name, downloadPath);
+                            return true;
+                        }
+                        else
+                        {
+                            File.Delete(downloadPath);
+                            OnErrorOccurred("Downloaded file validation failed", RcloneErrorType.ValidationError);
+                            return false;
+                        }
+                    }
+
+                    resumePosition = new FileInfo(downloadPath).Length;
+                    retryCount++;
+                    await Task.Delay(RETRY_DELAY_MS * retryCount);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error downloading rclone version {version} (attempt {retryCount + 1}/{MAX_RETRIES})");
                     if (retryCount == MAX_RETRIES - 1)
                     {
                         OnErrorOccurred($"Download failed: {ex.Message}", RcloneErrorType.DownloadError);
@@ -345,8 +457,6 @@ namespace DriveSync.Infrastructure.Services
             }
         }
 
-
-
         public async Task<bool> RollbackToVersion(string version)
         {
             try
@@ -432,7 +542,6 @@ namespace DriveSync.Infrastructure.Services
                 return false;
             }
         }
-
 
         private async Task<bool> DownloadFileWithProgress(string url, string destinationPath, IProgress<double> progress, long? resumePosition = null)
         {
