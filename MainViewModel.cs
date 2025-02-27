@@ -182,6 +182,88 @@ namespace DriveSync.WPF.ViewModels
             !string.IsNullOrWhiteSpace(SourcePath) &&
             !string.IsNullOrWhiteSpace(TargetPath);
 
+        // Command for Browse Source
+        [RelayCommand]
+        private async Task BrowseSource()
+        {
+            if (string.IsNullOrWhiteSpace(SelectedSourceRemote))
+            {
+                StatusMessage = LocalizationManager.Instance["PleaseSelectSourceRemoteFirst"];
+                StatusIndicatorBrush = ColorDelete;
+                return;
+            }
+
+            try
+            {
+                var logger = _loggerFactory.CreateLogger<DirectoryBrowserViewModel>();
+                var viewModel = new DirectoryBrowserViewModel(_rcloneService, logger, SelectedSourceRemote);
+                var dialog = new DirectoryBrowserDialog(viewModel);
+
+                if (Application.Current.MainWindow != null)
+                {
+                    dialog.Owner = Application.Current.MainWindow;
+                }
+
+                if (dialog.ShowDialog() == true)
+                {
+                    SourcePath = dialog.SelectedPath;
+                    StatusMessage = string.Format(
+                        LocalizationManager.Instance["SelectedSourcePath"],
+                        SourcePath
+                    );
+                    StatusIndicatorBrush = ColorCheck;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error browsing source directory");
+                StatusMessage = $"Error browsing directory: {ex.Message}";
+                StatusIndicatorBrush = ColorDelete;
+            }
+        }
+
+        // Command for Browse Target
+        [RelayCommand]
+        private async Task BrowseTarget()
+        {
+            if (string.IsNullOrWhiteSpace(SelectedTargetRemote))
+            {
+                StatusMessage = LocalizationManager.Instance["PleaseSelectTargetRemoteFirst"];
+                StatusIndicatorBrush = ColorDelete;
+                return;
+            }
+
+            try
+            {
+                var logger = _loggerFactory.CreateLogger<DirectoryBrowserViewModel>();
+                var viewModel = new DirectoryBrowserViewModel(_rcloneService, logger, SelectedTargetRemote);
+                var dialog = new DirectoryBrowserDialog(viewModel);
+
+                if (Application.Current.MainWindow != null)
+                {
+                    dialog.Owner = Application.Current.MainWindow;
+                }
+
+                if (dialog.ShowDialog() == true)
+                {
+                    TargetPath = dialog.SelectedPath;
+                    StatusMessage = string.Format(
+                        LocalizationManager.Instance["SelectedTargetPath"],
+                        TargetPath
+                    );
+                    StatusIndicatorBrush = ColorCheck;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error browsing target directory");
+                StatusMessage = $"Error browsing directory: {ex.Message}";
+                StatusIndicatorBrush = ColorDelete;
+            }
+        }
+
+
+
         // Rclone version retrieval method
         private async Task GetRcloneVersion()
         {
