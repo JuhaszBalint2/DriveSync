@@ -187,6 +187,36 @@ namespace DriveSync.WPF.ViewModels
         {
             try
             {
+                // First, try to get the version from the local installation directory
+                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string rcloneVersionsPath = Path.Combine(appDataPath, "DriveSync", "RcloneVersions");
+
+                if (Directory.Exists(rcloneVersionsPath))
+                {
+                    // Look for all version directories
+                    var versionDirs = Directory.GetDirectories(rcloneVersionsPath)
+                        .Where(d => Path.GetFileName(d).StartsWith("v"))
+                        .Select(d => new DirectoryInfo(d))
+                        .OrderByDescending(d => d.CreationTime)
+                        .ToList();
+
+                    if (versionDirs.Count > 0)
+                    {
+                        // Get the most recent version directory
+                        string latestVersionDir = versionDirs[0].FullName;
+                        string versionString = Path.GetFileName(latestVersionDir);
+
+                        // Extract version number from the directory name
+                        if (versionString.StartsWith("v"))
+                        {
+                            RcloneVersion = versionString.Substring(1);
+                            _logger.LogInformation($"Found installed rclone version: {RcloneVersion} in {latestVersionDir}");
+                            return;
+                        }
+                    }
+                }
+
+                // If we couldn't find the version from the local directory, fall back to running the command
                 using var process = new Process
                 {
                     StartInfo = new ProcessStartInfo
@@ -209,6 +239,7 @@ namespace DriveSync.WPF.ViewModels
                 if (versionMatch.Success)
                 {
                     RcloneVersion = versionMatch.Groups[1].Value;
+                    _logger.LogInformation($"Retrieved rclone version via command: {RcloneVersion}");
                 }
             }
             catch (Exception ex)
@@ -311,8 +342,47 @@ namespace DriveSync.WPF.ViewModels
         {
             if (string.IsNullOrEmpty(path)) return "Unknown";
 
+            // First, try to extract version from the path (which may contain v1.69.1, etc.)
             var match = Regex.Match(path, @"[vV](\d+\.\d+\.\d+)");
-            return match.Success ? match.Groups[1].Value : "Unknown";
+            if (match.Success)
+            {
+                return match.Groups[1].Value;
+            }
+
+            // If we couldn't extract version from the path, try to run rclone.exe with version flag
+            try
+            {
+                if (File.Exists(path))
+                {
+                    using var process = new Process
+                    {
+                        StartInfo = new ProcessStartInfo
+                        {
+                            FileName = path,
+                            Arguments = "version",
+                            RedirectStandardOutput = true,
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        }
+                    };
+
+                    process.Start();
+                    string output = process.StandardOutput.ReadToEnd();
+                    process.WaitForExit();
+
+                    var versionMatch = Regex.Match(output, @"rclone\s+v(\d+\.\d+\.\d+)");
+                    if (versionMatch.Success)
+                    {
+                        return versionMatch.Groups[1].Value;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting version from executable");
+            }
+
+            return "Unknown";
         }
 
         [RelayCommand]
@@ -325,6 +395,9 @@ namespace DriveSync.WPF.ViewModels
                 StatusIndicatorBrush = ColorScanning;
 
                 await _rcloneManager.ReinitializeAsync();
+
+                // Update version after check
+                await GetRcloneVersion();
             }
             catch (Exception ex)
             {
