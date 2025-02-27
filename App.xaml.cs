@@ -91,69 +91,56 @@ namespace DriveSync.WPF
                 System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.Default;
             }
 
-            // Check for rclone updates
-            var mainViewModel = ServiceProvider.GetService<MainViewModel>();
-            await mainViewModel.HandleRcloneUpdate();
-
-            var settings = AppSettings.Load();
-            var mainViewModel = ServiceProvider.GetService<MainViewModel>();
-            var logger = ServiceProvider.GetService<ILoggerFactory>().CreateLogger<App>();
             var rcloneManager = ServiceProvider.GetService<RcloneManager>();
-
-
+            var versionService = ServiceProvider.GetService<IRcloneVersionService>();
+            var logger = ServiceProvider.GetService<ILoggerFactory>().CreateLogger<App>();
 
             try
             {
-                // Initialize RcloneManager with progress tracking
-                rcloneManager.DownloadProgress += (sender, progress) =>
-                {
-                    if (mainViewModel != null)
-                    {
-                        Dispatcher.Invoke(() =>
-                        {
-                            mainViewModel.StatusMessage = $"Downloading rclone update: {progress:F1}%";
-                        });
-                    }
-                };
+                // Check for rclone updates
+                var (isUpdateAvailable, latestVersion, currentVersion) = await versionService.CheckForUpdate();
 
-                rcloneManager.InitializationError += (sender, message) =>
+                if (isUpdateAvailable)
                 {
-                    if (mainViewModel != null)
-                    {
-                        Dispatcher.Invoke(() =>
-                        {
-                            mainViewModel.StatusMessage = $"Rclone initialization error: {message}";
-                        });
-                    }
-                };
+                    // Show blocking update window
+                    var updateWindow = new UpdateAvailableWindow(currentVersion, latestVersion);
+                    updateWindow.Owner = null;
+                    bool? updateResult = updateWindow.ShowDialog();
 
-                rcloneManager.RclonePathChanged += (sender, path) =>
-                {
-                    if (mainViewModel != null)
+                    if (updateResult != true)
                     {
-                        Dispatcher.Invoke(() =>
-                        {
-                            string version = ExtractVersionFromPath(path);
-                            mainViewModel.UpdateMessage = $"rclone v{version}";
-                        });
-                    }
-                };
+                        // If update fails, attempt to rollback
+                        bool rolledBack = await versionService.RollbackToVersion(currentVersion);
 
-                // Initialize RcloneManager
+                        if (!rolledBack)
+                        {
+                            // If rollback fails, show critical error and shutdown
+                            MessageBox.Show(
+                                "Update failed and rollback was unsuccessful. Please reinstall the application.",
+                                "Critical Error",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Error
+                            );
+                            Shutdown();
+                            return;
+                        }
+                    }
+                }
+
+                // Continue with normal startup
                 await rcloneManager.InitializeAsync();
+
+                var settings = AppSettings.Load();
+                var mainViewModel = ServiceProvider.GetService<MainViewModel>();
 
                 if (mainViewModel != null)
                 {
-                    // Get version from the current rclone path
-                    string version = ExtractVersionFromPath(rcloneManager.CurrentRclonePath);
-                    mainViewModel.UpdateMessage = $"rclone v{version}";
-
                     // Apply theme settings
                     string themeToApply = settings.UseSystemTheme ?
                         AppSettings.DetectSystemTheme() :
                         settings.Theme;
 
-                    logger.LogInformation($"OnStartup - UseSystemTheme: {settings.UseSystemTheme}, Theme: {settings.Theme}, Applying: {themeToApply}");
+                    logger.LogInformation($"Applying theme: {themeToApply}");
                     mainViewModel.ApplyTheme(themeToApply);
                 }
 
@@ -164,8 +151,14 @@ namespace DriveSync.WPF
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error during startup");
-                var mainWindow = ServiceProvider.GetService<MainWindow>();
-                mainWindow?.Show();
+                MessageBox.Show(
+                    $"A critical error occurred during startup: {ex.Message}\n\n" +
+                    "The application will now close.",
+                    "Startup Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error
+                );
+                Shutdown();
             }
         }
 

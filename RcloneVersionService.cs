@@ -60,6 +60,30 @@ namespace DriveSync.Infrastructure.Services
         public event EventHandler<string> VersionCheckError;
         public event EventHandler<(string Message, RcloneErrorType ErrorType)> ErrorOccurred;
 
+        public async Task<(bool IsUpdateAvailable, string LatestVersion, string CurrentVersion)> CheckForUpdate()
+        {
+            try
+            {
+                string currentVersion = await GetCurrentRcloneVersion();
+                var latestRelease = await FetchLatestRcloneReleaseWithRetry();
+
+                if (latestRelease == null)
+                {
+                    return (false, null, currentVersion);
+                }
+
+                string latestVersion = latestRelease.tag_name.TrimStart('v');
+                bool isUpdateAvailable = IsNewVersionAvailable(currentVersion, latestVersion);
+
+                return (isUpdateAvailable, latestVersion, currentVersion);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking for updates");
+                return (false, null, null);
+            }
+        }
+
         private class VersionHistory
         {
             public string Version { get; set; }
@@ -558,19 +582,16 @@ namespace DriveSync.Infrastructure.Services
             return null;
         }
 
-        public async Task<(bool IsUpdateAvailable, string LatestVersion, string CurrentVersion)> CheckForUpdate()
+        public interface IRcloneVersionService
         {
-            try
-            {
-                var (isUpdateAvailable, latestVersion, currentVersion) = await CheckRcloneVersion();
-                return (isUpdateAvailable, latestVersion, currentVersion);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error checking for updates");
-                return (false, null, null);
-            }
+            Task<(bool IsUpdateAvailable, string LatestVersion, string CurrentVersion)> CheckForUpdate();
+            Task<bool> DownloadLatestRclone(string downloadPath, IProgress<double> progress = null);
+            Task<bool> ValidateRcloneFile(string filePath);
+            Task<bool> RollbackToVersion(string version);
+            event EventHandler<string> VersionCheckError;
+            event EventHandler<(string Message, RcloneErrorType ErrorType)> ErrorOccurred;
         }
+
 
         private async Task EnsureApiRateLimit()
         {
