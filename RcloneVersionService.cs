@@ -558,6 +558,20 @@ namespace DriveSync.Infrastructure.Services
             return null;
         }
 
+        public async Task<(bool IsUpdateAvailable, string LatestVersion, string CurrentVersion)> CheckForUpdate()
+        {
+            try
+            {
+                var (isUpdateAvailable, latestVersion, currentVersion) = await CheckRcloneVersion();
+                return (isUpdateAvailable, latestVersion, currentVersion);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking for updates");
+                return (false, null, null);
+            }
+        }
+
         private async Task EnsureApiRateLimit()
         {
             var timeSinceLastCall = DateTime.UtcNow - _lastApiCall;
@@ -598,3 +612,4 @@ namespace DriveSync.Infrastructure.Services
         public string browser_download_url { get; set; }
     }
 }
+

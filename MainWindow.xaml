@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:converters="clr-namespace:DriveSync.WPF.Converters"
     xmlns:fa="http://schemas.fontawesome.io/icons/"
-xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
+    xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:viewModels="clr-namespace:DriveSync.WPF.ViewModels"
@@ -25,59 +25,60 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
     TextOptions.TextRenderingMode="ClearType">
 
     <views:ModernWindowBase.Resources>
-        <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
-        <converters:SyncOperationIconConverter x:Key="SyncOperationIconConverter"/>
-
-        <!-- Sync Operation Icon Style -->
         <Style x:Key="SyncOperationIconStyle" TargetType="fas:IconBlock">
             <Setter Property="Width" Value="24"/>
             <Setter Property="Height" Value="24"/>
             <Setter Property="Margin" Value="0,0,10,0"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="FontSize" Value="24"/>
-            <Setter Property="Foreground" Value="#0078D4"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Background.Color}" Value="#303030">
-                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Background.Color}" Value="#FAFAFA">
+                    <Setter Property="Foreground" Value="#0078D4"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-
-        <!-- Secondary Info Icon Style - REDUCED SIZE -->
+        
         <Style x:Key="SecondaryInfoIconStyle" TargetType="fas:IconBlock">
             <Setter Property="Width" Value="16"/>
             <Setter Property="Height" Value="16"/>
             <Setter Property="Margin" Value="0,0,6,0"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="FontSize" Value="16"/>
-            <Setter Property="Foreground" Value="#0078D4"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Background.Color}" Value="#303030">
-                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Background.Color}" Value="#FAFAFA">
+                    <Setter Property="Foreground" Value="#0078D4"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
 
-        <!-- Secondary Info Text Style -->
         <Style x:Key="SecondaryInfoTextStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Foreground" Value="#0078D4"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Background.Color}" Value="#303030">
-                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}, Path=Background.Color}" Value="#FAFAFA">
+                    <Setter Property="Foreground" Value="#0078D4"/>
                 </DataTrigger>
             </Style.Triggers>
         </Style>
-
     </views:ModernWindowBase.Resources>
+
+
 
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Action Bar -->
         <Grid Grid.Row="0" 
               Background="{DynamicResource PrimaryBrush}">
             <Grid.ColumnDefinitions>
@@ -86,7 +87,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Title -->
             <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ApplicationTitle]}"
                        Grid.Column="0"
                        Style="{DynamicResource HeadingStyle}"
@@ -95,12 +95,10 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                        VerticalAlignment="Center"
                        Margin="17,12"/>
 
-            <!-- Action Buttons -->
             <StackPanel Grid.Column="2" 
                         Orientation="Horizontal" 
                         HorizontalAlignment="Right"
                         Margin="17,12">
-                <!-- Sync Button -->
                 <Button Content="{Binding ButtonText}"
                         Command="{Binding SyncCommand}"
                         Style="{DynamicResource ButtonBaseStyle}"
@@ -110,7 +108,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                         Padding="10,6"
                         Margin="0,0,8,0"/>
 
-                <!-- Schedule Button -->
                 <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Schedule]}"
                         Command="{Binding ScheduleSyncCommand}"
                         Style="{DynamicResource ButtonBaseStyle}"
@@ -119,7 +116,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                         Padding="10,6"
                         Margin="0,0,8,0"/>
 
-                <!-- Sync History Button -->
                 <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncHistory]}"
                         Command="{Binding OpenSyncHistoryListCommand}"
                         Style="{DynamicResource ButtonBaseStyle}"
@@ -142,7 +138,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                                  IsSelected="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=CurrentLanguage, Converter={StaticResource HungarianSelectedConverter}}"/>
                 </ComboBox>
 
-                <!-- Settings Button -->
                 <Button Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Settings]}"
                         Command="{Binding OpenSettingsCommand}"
                         Style="{DynamicResource ButtonBaseStyle}"
@@ -152,9 +147,7 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
             </StackPanel>
         </Grid>
 
-        <!-- Main Content Area -->
         <Grid Grid.Row="1" Margin="20">
-            <!-- Sync Configuration Area -->
             <Border Background="{DynamicResource SurfaceBrush}"
                     CornerRadius="7"
                     Padding="17"
@@ -176,7 +169,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                               Margin="0,0,0,16"
                               Grid.Row="0"/>
 
-                    <!-- Source Target Configuration -->
                     <Grid Grid.Row="1">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
@@ -184,7 +176,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- Source Panel -->
                         <DockPanel Grid.Column="0" Margin="0,0,7,0">
                             <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Source]}"
                                      Style="{DynamicResource BodyTextStyle}"
@@ -230,7 +221,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                             </Grid>
                         </DockPanel>
 
-                        <!-- Arrow -->
                         <TextBlock Grid.Column="1"
                                      Text="➔"
                                      FontSize="24"
@@ -238,7 +228,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                                      Margin="13,32"
                                      Foreground="{DynamicResource TextPrimaryBrush}"/>
 
-                        <!-- Target Panel -->
                         <DockPanel Grid.Column="2" Margin="7,0,0,0">
                             <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Target]}"
                                      Style="{DynamicResource BodyTextStyle}"
@@ -286,7 +275,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                         </DockPanel>
                     </Grid>
 
-                    <!-- Sync Mode Selection -->
                     <DockPanel Grid.Row="3" 
                              LastChildFill="False">
                         <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[SyncMode]}"
@@ -310,7 +298,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                         </ComboBox>
                     </DockPanel>
 
-                    <!-- Progress section -->
                     <Border Grid.Row="5" 
         Background="{DynamicResource BackgroundBrush}"
         BorderBrush="{DynamicResource BorderDefaultBrush}"
@@ -318,7 +305,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
         CornerRadius="8"
         Padding="24">
                         <Grid>
-                            <!-- Waiting for sync message -->
                             <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[WaitingForSync]}"
                   Style="{DynamicResource BodyTextStyle}"
                   FontSize="14"
@@ -326,7 +312,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                   VerticalAlignment="Center"
                   Visibility="{Binding IsSyncing, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
 
-                            <!-- Active sync progress -->
                             <Grid Visibility="{Binding IsSyncing, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -334,11 +319,9 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
-                                <!-- Operation and File Info -->
                                 <DockPanel Grid.Row="0" 
                       Margin="0,0,0,20"
                       LastChildFill="True">
-                                    <!-- Operation Icon and Text -->
                                     <StackPanel DockPanel.Dock="Left" 
                           Orientation="Horizontal"
                           VerticalAlignment="Center">
@@ -351,7 +334,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                                                   VerticalAlignment="Center"/>
                                     </StackPanel>
 
-                                    <!-- Progress Percentage -->
                                     <TextBlock Text="{Binding ProgressPercentage}"
                          Style="{DynamicResource BodyTextStyle}"
                          FontSize="14"
@@ -361,7 +343,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                          Margin="0,0,0,8"/>
                                 </DockPanel>
 
-                                <!-- Filename -->
                                 <StackPanel Grid.Row="1" 
                                             Orientation="Horizontal"
                                             Margin="30,0,0,16">
@@ -372,14 +353,12 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                                                FontWeight="SemiBold"/>
                                 </StackPanel>
 
-                                <!-- Progress Bar Section -->
                                 <Grid Grid.Row="2">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
-                                    <!-- Progress Bar -->
                                     <Border Grid.Row="0" 
             Background="{DynamicResource BackgroundBrush}"
             CornerRadius="8"
@@ -392,11 +371,11 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                                         </Border.Effect>
                                         <Grid>
                                             <ProgressBar Value="{Binding ProgressValue}"
-                         Maximum="100"
-                         Minimum="0"
-                         Height="14"
-                         Background="Transparent"
-                         BorderThickness="0">
+             Maximum="100"
+             Minimum="0"
+             Height="14"
+             Background="Transparent"
+             BorderThickness="0">
                                                 <ProgressBar.Style>
                                                     <Style TargetType="ProgressBar">
                                                         <Setter Property="Template">
@@ -404,25 +383,25 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                                                                 <ControlTemplate TargetType="ProgressBar">
                                                                     <Grid>
                                                                         <Border x:Name="PART_Track"
-                                                Background="{DynamicResource SurfaceBrush}"
-                                                CornerRadius="7"/>
+                                    Background="{DynamicResource SurfaceBrush}"
+                                    CornerRadius="7"/>
                                                                         <Border x:Name="PART_Indicator"
-                                                Background="{DynamicResource AccentBrush}"
-                                                CornerRadius="7"
-                                                HorizontalAlignment="Left">
+                                    Background="{DynamicResource AccentBrush}"
+                                    CornerRadius="7"
+                                    HorizontalAlignment="Left">
                                                                             <Border.Width>
                                                                                 <MultiBinding>
                                                                                     <MultiBinding.Converter>
                                                                                         <converters:ProgressToWidthConverter/>
                                                                                     </MultiBinding.Converter>
                                                                                     <Binding Path="Value" 
-                                             RelativeSource="{RelativeSource TemplatedParent}"/>
+                                                 RelativeSource="{RelativeSource TemplatedParent}"/>
                                                                                     <Binding Path="Minimum" 
-                                             RelativeSource="{RelativeSource TemplatedParent}"/>
+                                                 RelativeSource="{RelativeSource TemplatedParent}"/>
                                                                                     <Binding Path="Maximum" 
-                                             RelativeSource="{RelativeSource TemplatedParent}"/>
+                                                 RelativeSource="{RelativeSource TemplatedParent}"/>
                                                                                     <Binding Path="ActualWidth" 
-                                             RelativeSource="{RelativeSource TemplatedParent}"/>
+                                                 RelativeSource="{RelativeSource TemplatedParent}"/>
                                                                                 </MultiBinding>
                                                                             </Border.Width>
                                                                         </Border>
@@ -436,7 +415,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                                         </Grid>
                                     </Border>
 
-                                    <!-- Speed and Time Info -->
                                     <Grid Grid.Row="1">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
@@ -445,7 +423,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <!-- Speed Info - Using BOLT icon -->
                                         <StackPanel Grid.Column="0" 
                                                     Orientation="Horizontal"
                                                     Margin="0,0,0,0">
@@ -456,7 +433,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                                                        Margin="4,0,0,0"/>
                                         </StackPanel>
 
-                                        <!-- Timestamp - Icon Only -->
                                         <StackPanel Grid.Column="1"
                                                     Orientation="Horizontal"
                                                     HorizontalAlignment="Center"
@@ -468,7 +444,6 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                                                        Margin="4,0,0,0"/>
                                         </StackPanel>
 
-                                        <!-- Time Remaining - Icon and value -->
                                         <StackPanel Grid.Column="2"
                                                    Orientation="Horizontal"
                                                    HorizontalAlignment="Right"
@@ -487,6 +462,16 @@ xmlns:fas="http://schemas.awesome.incremented/wpf/xaml/fontawesome.sharp"
                 </Grid>
             </Border>
         </Grid>
-    </Grid>
 
+        <Grid Grid.Row="2" 
+              Background="{DynamicResource SurfaceBrush}"
+              Height="24">
+            <TextBlock Text="{Binding UpdateMessage}"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Center"
+                       Margin="0,0,20,0"
+                       FontSize="10"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+        </Grid>
+    </Grid>
 </views:ModernWindowBase>

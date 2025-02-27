@@ -91,10 +91,16 @@ namespace DriveSync.WPF
                 System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.Default;
             }
 
+            // Check for rclone updates
+            var mainViewModel = ServiceProvider.GetService<MainViewModel>();
+            await mainViewModel.HandleRcloneUpdate();
+
             var settings = AppSettings.Load();
             var mainViewModel = ServiceProvider.GetService<MainViewModel>();
             var logger = ServiceProvider.GetService<ILoggerFactory>().CreateLogger<App>();
             var rcloneManager = ServiceProvider.GetService<RcloneManager>();
+
+
 
             try
             {

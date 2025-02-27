@@ -772,6 +772,30 @@ namespace DriveSync.WPF.ViewModels
             }
         }
 
+        private async Task HandleRcloneUpdate()
+        {
+            try
+            {
+                var updateInfo = await _rcloneVersionService.CheckForUpdate();
+
+                if (updateInfo.IsUpdateAvailable)
+                {
+                    // Show blocking update dialog
+                    var updateDialog = new UpdateAvailableWindow(
+                        updateInfo.CurrentVersion,
+                        updateInfo.LatestVersion
+                    );
+                    updateDialog.Owner = Application.Current.MainWindow;
+                    updateDialog.ShowDialog();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error handling rclone update");
+                MessageBox.Show($"Update check failed: {ex.Message}", "Update Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
 
         public void ApplyTheme(string themeName)
         {
