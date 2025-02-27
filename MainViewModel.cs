@@ -61,6 +61,7 @@ namespace DriveSync.WPF.ViewModels
         private readonly ILogger<MainViewModel> _logger;
         private readonly ILoggerFactory _loggerFactory;
         private readonly RcloneManager _rcloneManager;
+        private readonly IRcloneVersionService _rcloneVersionService;
         private CancellationTokenSource _syncCancellationTokenSource;
 
         // Progress tracking constants
@@ -178,12 +179,15 @@ namespace DriveSync.WPF.ViewModels
             IRcloneService rcloneService,
             ILogger<MainViewModel> logger,
             ILoggerFactory loggerFactory,
-            RcloneManager rcloneManager)
+            RcloneManager rcloneManager,
+            IRcloneVersionService rcloneVersionService)
         {
             _rcloneService = rcloneService;
             _logger = logger;
             _loggerFactory = loggerFactory;
             _rcloneManager = rcloneManager;
+            _rcloneVersionService = rcloneVersionService;
+
 
             // Subscribe to RcloneManager events
             _rcloneManager.DownloadProgress += (sender, progress) =>
@@ -795,6 +799,7 @@ namespace DriveSync.WPF.ViewModels
                 MessageBox.Show($"Update check failed: {ex.Message}", "Update Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
 
 
         public void ApplyTheme(string themeName)

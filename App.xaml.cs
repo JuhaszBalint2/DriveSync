@@ -98,22 +98,31 @@ namespace DriveSync.WPF
             try
             {
                 // Check for rclone updates
-                var (isUpdateAvailable, latestVersion, currentVersion) = await versionService.CheckForUpdate();
+                logger.LogInformation("Checking for rclone updates...");
+                var checkResult = await versionService.CheckForUpdate();
+                bool isUpdateAvailable = checkResult.IsUpdateAvailable;
+                string latestVersion = checkResult.LatestVersion;
+                string currentVersion = checkResult.CurrentVersion;
 
                 if (isUpdateAvailable)
                 {
+                    logger.LogInformation($"Update available: {currentVersion} -> {latestVersion}");
                     // Show blocking update window
                     var updateWindow = new UpdateAvailableWindow(currentVersion, latestVersion);
-                    updateWindow.Owner = null;
-                    bool? updateResult = updateWindow.ShowDialog();
+                    updateWindow.Owner = null; // No owner since MainWindow isn't created yet
+                    bool? result = updateWindow.ShowDialog();
 
-                    if (updateResult != true)
+                    logger.LogInformation($"Update dialog result: {result}");
+
+                    if (result != true)
                     {
+                        logger.LogWarning("Update was not successful, attempting rollback");
                         // If update fails, attempt to rollback
                         bool rolledBack = await versionService.RollbackToVersion(currentVersion);
 
                         if (!rolledBack)
                         {
+                            logger.LogError("Rollback failed, application will now exit");
                             // If rollback fails, show critical error and shutdown
                             MessageBox.Show(
                                 "Update failed and rollback was unsuccessful. Please reinstall the application.",
@@ -124,10 +133,23 @@ namespace DriveSync.WPF
                             Shutdown();
                             return;
                         }
+                        else
+                        {
+                            logger.LogInformation("Rollback successful, continuing with startup");
+                        }
                     }
+                    else
+                    {
+                        logger.LogInformation("Update was successful, continuing with startup");
+                    }
+                }
+                else
+                {
+                    logger.LogInformation("No updates available");
                 }
 
                 // Continue with normal startup
+                logger.LogInformation("Initializing rclone manager...");
                 await rcloneManager.InitializeAsync();
 
                 var settings = AppSettings.Load();
@@ -145,8 +167,19 @@ namespace DriveSync.WPF
                 }
 
                 // Show the main window
+                // Show the main window
+                logger.LogInformation("Starting main window...");
                 var mainWindow = ServiceProvider.GetService<MainWindow>();
+
+                // Set shutdown mode to explicitly not exit when last window closes
+                ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
+                // Show main window
                 mainWindow?.Show();
+
+                // After showing the main window, set shutdown mode to close when main window closes
+                ShutdownMode = ShutdownMode.OnMainWindowClose;
+                MainWindow = mainWindow;
             }
             catch (Exception ex)
             {

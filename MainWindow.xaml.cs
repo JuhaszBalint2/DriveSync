@@ -1,21 +1,33 @@
 ﻿using System.Windows.Controls;
 using DriveSync.WPF.Localization;
 using DriveSync.WPF.ViewModels;
+using Microsoft.Extensions.Logging;
 
 namespace DriveSync.WPF.Views
 {
     public partial class MainWindow : ModernWindowBase
     {
         private readonly MainViewModel _viewModel;
+        private readonly ILogger<MainWindow> _logger;
 
-        public MainWindow(MainViewModel viewModel)
+        public MainWindow(MainViewModel viewModel, ILogger<MainWindow> logger = null)
         {
             InitializeComponent();
             _viewModel = viewModel;
+            _logger = logger;
             base.DataContext = viewModel;
 
             // Initialize language ComboBox
             InitializeLanguageSelection();
+
+            // Log window opening
+            _logger?.LogInformation("MainWindow initialized and opened");
+
+            // Handle closing to prevent accidental shutdown
+            Closing += (s, e) =>
+            {
+                _logger?.LogInformation("MainWindow closing");
+            };
         }
 
         private void InitializeLanguageSelection()

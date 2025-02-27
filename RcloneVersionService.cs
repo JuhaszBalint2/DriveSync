@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -36,6 +37,7 @@ namespace DriveSync.Infrastructure.Services
 
     public interface IRcloneVersionService
     {
+        Task<(bool IsUpdateAvailable, string LatestVersion, string CurrentVersion)> CheckForUpdate();
         Task<(bool IsUpdateAvailable, string LatestVersion, string CurrentVersion)> CheckRcloneVersion();
         Task<bool> DownloadLatestRclone(string downloadPath, IProgress<double> progress = null);
         Task<bool> ValidateRcloneFile(string filePath);
@@ -60,6 +62,26 @@ namespace DriveSync.Infrastructure.Services
         public event EventHandler<string> VersionCheckError;
         public event EventHandler<(string Message, RcloneErrorType ErrorType)> ErrorOccurred;
 
+        private class VersionHistory
+        {
+            public string Version { get; set; }
+            public string Path { get; set; }
+            public DateTime InstallDate { get; set; }
+            public string Checksum { get; set; }
+        }
+
+        public RcloneVersionService(ILogger<RcloneVersionService> logger)
+        {
+            _logger = logger;
+            _httpClient = new HttpClient
+            {
+                BaseAddress = new Uri(GITHUB_API_URL),
+                Timeout = TimeSpan.FromMinutes(5) // Increased timeout for large downloads
+            };
+            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("DriveSync");
+            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        }
+
         public async Task<(bool IsUpdateAvailable, string LatestVersion, string CurrentVersion)> CheckForUpdate()
         {
             try
@@ -82,26 +104,6 @@ namespace DriveSync.Infrastructure.Services
                 _logger.LogError(ex, "Error checking for updates");
                 return (false, null, null);
             }
-        }
-
-        private class VersionHistory
-        {
-            public string Version { get; set; }
-            public string Path { get; set; }
-            public DateTime InstallDate { get; set; }
-            public string Checksum { get; set; }
-        }
-
-        public RcloneVersionService(ILogger<RcloneVersionService> logger)
-        {
-            _logger = logger;
-            _httpClient = new HttpClient
-            {
-                BaseAddress = new Uri(GITHUB_API_URL),
-                Timeout = TimeSpan.FromMinutes(5) // Increased timeout for large downloads
-            };
-            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("DriveSync");
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
         public async Task<(bool IsUpdateAvailable, string LatestVersion, string CurrentVersion)> CheckRcloneVersion()
@@ -582,17 +584,6 @@ namespace DriveSync.Infrastructure.Services
             return null;
         }
 
-        public interface IRcloneVersionService
-        {
-            Task<(bool IsUpdateAvailable, string LatestVersion, string CurrentVersion)> CheckForUpdate();
-            Task<bool> DownloadLatestRclone(string downloadPath, IProgress<double> progress = null);
-            Task<bool> ValidateRcloneFile(string filePath);
-            Task<bool> RollbackToVersion(string version);
-            event EventHandler<string> VersionCheckError;
-            event EventHandler<(string Message, RcloneErrorType ErrorType)> ErrorOccurred;
-        }
-
-
         private async Task EnsureApiRateLimit()
         {
             var timeSinceLastCall = DateTime.UtcNow - _lastApiCall;
@@ -633,4 +624,3 @@ namespace DriveSync.Infrastructure.Services
         public string browser_download_url { get; set; }
     }
 }
-
