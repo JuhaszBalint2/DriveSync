@@ -22,13 +22,33 @@ namespace DriveSync.WPF.Converters
                         return LocalizationManager.Instance["ScanningOperation"];
                     }
 
+                    // Check if it's actually valid JSON
+                    if (!textValue.StartsWith("{") || !textValue.EndsWith("}"))
+                    {
+                        return textValue; // Return the raw text if it's not JSON
+                    }
+
                     // Regular JSON parsing for operation
-                    var obj = JsonSerializer.Deserialize<JsonElement>(textValue);
-                    return obj.GetProperty("Operation").GetString() ?? string.Empty;
+                    try
+                    {
+                        var obj = JsonSerializer.Deserialize<JsonElement>(textValue);
+                        if (obj.TryGetProperty("Operation", out var opElement))
+                        {
+                            return opElement.GetString() ?? string.Empty;
+                        }
+                    }
+                    catch (JsonException)
+                    {
+                        // If JSON parsing fails, just return the original text
+                        return textValue;
+                    }
                 }
             }
-            catch { }
-            return string.Empty;
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in converter: {ex.Message}");
+            }
+            return value?.ToString() ?? string.Empty;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -53,12 +73,32 @@ namespace DriveSync.WPF.Converters
                         return textValue;
                     }
 
+                    // Check if it's actually valid JSON
+                    if (!textValue.StartsWith("{") || !textValue.EndsWith("}"))
+                    {
+                        return textValue; // Return the raw text if it's not JSON
+                    }
+
                     // Regular JSON parsing for filename
-                    var obj = JsonSerializer.Deserialize<JsonElement>(textValue);
-                    return obj.GetProperty("Filename").GetString() ?? string.Empty;
+                    try
+                    {
+                        var obj = JsonSerializer.Deserialize<JsonElement>(textValue);
+                        if (obj.TryGetProperty("Filename", out var filenameElement))
+                        {
+                            return filenameElement.GetString() ?? string.Empty;
+                        }
+                    }
+                    catch (JsonException)
+                    {
+                        // If JSON parsing fails, just return the original text
+                        return textValue;
+                    }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in converter: {ex.Message}");
+            }
             return value as string ?? string.Empty;
         }
 
@@ -84,13 +124,33 @@ namespace DriveSync.WPF.Converters
                         return DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
                     }
 
+                    // Check if it's actually valid JSON
+                    if (!textValue.StartsWith("{") || !textValue.EndsWith("}"))
+                    {
+                        return DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"); // Return current time if it's not JSON
+                    }
+
                     // Regular JSON parsing for timestamp
-                    var obj = JsonSerializer.Deserialize<JsonElement>(textValue);
-                    return obj.GetProperty("Timestamp").GetString() ?? string.Empty;
+                    try
+                    {
+                        var obj = JsonSerializer.Deserialize<JsonElement>(textValue);
+                        if (obj.TryGetProperty("Timestamp", out var timestampElement))
+                        {
+                            return timestampElement.GetString() ?? string.Empty;
+                        }
+                    }
+                    catch (JsonException)
+                    {
+                        // If JSON parsing fails, return current time
+                        return DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
+                    }
                 }
             }
-            catch { }
-            return string.Empty;
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in converter: {ex.Message}");
+            }
+            return DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

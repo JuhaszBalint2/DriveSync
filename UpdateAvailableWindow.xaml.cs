@@ -14,11 +14,12 @@ namespace DriveSync.WPF.Views
         private readonly RcloneManager _rcloneManager;
         private readonly ILogger<UpdateAvailableWindow> _logger;
         private readonly string _currentVersion;
-        private readonly string _latestVersion;
+        private readonly string _targetVersion;
+        private readonly bool _isInitialInstall;
 
         public string UpdateMessage { get; set; }
 
-        public UpdateAvailableWindow(string currentVersion, string latestVersion)
+        public UpdateAvailableWindow(string currentVersion, string targetVersion)
         {
             InitializeComponent();
 
@@ -28,10 +29,34 @@ namespace DriveSync.WPF.Views
                 ?.CreateLogger<UpdateAvailableWindow>();
 
             _currentVersion = currentVersion;
-            _latestVersion = latestVersion;
+            _targetVersion = targetVersion;
+
+            // Check if this is an initial install (no local version)
+            string baseDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "DriveSync",
+                "RcloneVersions"
+            );
+
+            // Check if any version exists
+            bool anyVersionExists = Directory.Exists(baseDirectory) &&
+                Directory.GetDirectories(baseDirectory, "v*").Length > 0;
+
+            _isInitialInstall = !anyVersionExists;
 
             DataContext = this;
-            UpdateMessage = $"Current Version: {currentVersion}\nLatest Version: {latestVersion}";
+
+            // Set appropriate message based on whether this is initial install or update
+            if (_isInitialInstall)
+            {
+                Title = "Rclone Installation";
+                UpdateMessage = $"Rclone needs to be installed.\nDownloading version: {targetVersion}";
+            }
+            else
+            {
+                Title = "Rclone Update";
+                UpdateMessage = $"Current Version: {currentVersion}\nLatest Version: {targetVersion}";
+            }
 
             // Prevent window from being closed by user
             Closing += (s, e) =>
@@ -49,7 +74,7 @@ namespace DriveSync.WPF.Views
         {
             try
             {
-                _logger?.LogInformation($"Starting update from {_currentVersion} to {_latestVersion}");
+                _logger?.LogInformation($"Starting {(_isInitialInstall ? "installation" : "update")} of version {_targetVersion}");
                 string baseDirectory = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "DriveSync",
@@ -63,7 +88,7 @@ namespace DriveSync.WPF.Views
 
                 string downloadPath = Path.Combine(
                     baseDirectory,
-                    $"rclone-v{_latestVersion}-windows-amd64.zip"
+                    $"rclone-v{_targetVersion}-windows-amd64.zip"
                 );
 
                 var progress = new Progress<double>(p =>
@@ -74,7 +99,7 @@ namespace DriveSync.WPF.Views
                     });
                 });
 
-                _logger?.LogInformation($"Downloading rclone v{_latestVersion} to {downloadPath}");
+                _logger?.LogInformation($"Downloading rclone v{_targetVersion} to {downloadPath}");
                 bool downloaded = await _versionService.DownloadLatestRclone(downloadPath, progress);
 
                 if (downloaded)
@@ -85,76 +110,45 @@ namespace DriveSync.WPF.Views
 
                     if (reinitialized)
                     {
-                        _logger?.LogInformation("Update successful!");
+                        _logger?.LogInformation("Installation/Update successful!");
                         DialogResult = true;
                         Close();
                     }
                     else
                     {
-                        _logger?.LogWarning("Reinitialization failed, attempting rollback");
-                        // Attempt rollback
-                        await HandleUpdateFailure();
+                        _logger?.LogWarning("Reinitialization failed");
+                        MessageBox.Show(
+                            "The download was successful but failed to initialize. Please try restarting the application.",
+                            "Initialization Error",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning
+                        );
+                        DialogResult = false;
+                        Close();
                     }
                 }
                 else
                 {
-                    _logger?.LogWarning("Download failed, attempting rollback");
-                    await HandleUpdateFailure();
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Error during rclone update");
-                await HandleUpdateFailure();
-            }
-        }
-
-        private async Task HandleUpdateFailure()
-        {
-            try
-            {
-                _logger?.LogInformation($"Attempting to rollback to version {_currentVersion}");
-                // Attempt to rollback to previous version
-                bool rolledBack = await _versionService.RollbackToVersion(_currentVersion);
-
-                if (rolledBack)
-                {
-                    _logger?.LogInformation("Rollback successful");
+                    _logger?.LogWarning("Download failed");
                     MessageBox.Show(
-                        "Update failed. The previous version has been restored.",
-                        "Update Error",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning
-                    );
-
-                    // Continue application instead of shutting down
-                    DialogResult = false;
-                    Close();
-                }
-                else
-                {
-                    _logger?.LogError("Rollback failed");
-                    MessageBox.Show(
-                        "Update failed and rollback was unsuccessful. The application will now close.",
-                        "Critical Error",
+                        "Failed to download the required files. Please check your internet connection and try again.",
+                        "Download Error",
                         MessageBoxButton.OK,
                         MessageBoxImage.Error
                     );
-
                     DialogResult = false;
                     Close();
                 }
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Error during update rollback");
+                _logger?.LogError(ex, "Error during download");
                 MessageBox.Show(
-                    "A critical error occurred during update. The application will now close.",
-                    "Fatal Error",
+                    $"An error occurred during download: {ex.Message}",
+                    "Download Error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error
                 );
-
                 DialogResult = false;
                 Close();
             }

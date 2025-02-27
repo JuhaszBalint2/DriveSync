@@ -24,6 +24,33 @@ namespace DriveSync.WPF.Converters
                     return IconChar.Search;
                 }
 
+                // Check if the string is valid JSON
+                if (!jsonString.StartsWith("{") || !jsonString.EndsWith("}"))
+                {
+                    // If it's not a JSON string, handle it based on content
+                    if (jsonString.Contains("COPY", StringComparison.OrdinalIgnoreCase) ||
+                        jsonString.Contains("MÁSOLÁS", StringComparison.OrdinalIgnoreCase))
+                        return IconChar.Copy;
+
+                    if (jsonString.Contains("DELETE", StringComparison.OrdinalIgnoreCase) ||
+                        jsonString.Contains("TÖRLÉS", StringComparison.OrdinalIgnoreCase))
+                        return IconChar.TrashAlt;
+
+                    if (jsonString.Contains("SKIP", StringComparison.OrdinalIgnoreCase) ||
+                        jsonString.Contains("KIHAGYÁS", StringComparison.OrdinalIgnoreCase))
+                        return IconChar.Ban;
+
+                    if (jsonString.Contains("MOVE", StringComparison.OrdinalIgnoreCase) ||
+                        jsonString.Contains("ÁTHELYEZÉS", StringComparison.OrdinalIgnoreCase))
+                        return IconChar.FileImport;
+
+                    if (jsonString.Contains("SCAN", StringComparison.OrdinalIgnoreCase) ||
+                        jsonString.Contains("KERES", StringComparison.OrdinalIgnoreCase))
+                        return IconChar.Search;
+
+                    return IconChar.QuestionCircle;
+                }
+
                 try
                 {
                     // Regular JSON parsing for other operations

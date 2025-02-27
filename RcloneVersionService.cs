@@ -42,6 +42,7 @@ namespace DriveSync.Infrastructure.Services
         Task<bool> DownloadLatestRclone(string downloadPath, IProgress<double> progress = null);
         Task<bool> ValidateRcloneFile(string filePath);
         Task<bool> RollbackToVersion(string version);
+        Task<bool> CanRollbackToVersion(string version);
         event EventHandler<string> VersionCheckError;
         event EventHandler<(string Message, RcloneErrorType ErrorType)> ErrorOccurred;
     }
@@ -95,7 +96,24 @@ namespace DriveSync.Infrastructure.Services
                 }
 
                 string latestVersion = latestRelease.tag_name.TrimStart('v');
-                bool isUpdateAvailable = IsNewVersionAvailable(currentVersion, latestVersion);
+
+                // Add additional checks to verify if versions exist locally
+                string baseDirectory = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "DriveSync",
+                    "RcloneVersions"
+                );
+
+                // Check if the latest version directory already exists and contains rclone.exe
+                string latestVersionPath = Path.Combine(baseDirectory, $"v{latestVersion}", "rclone.exe");
+                bool latestVersionExists = File.Exists(latestVersionPath);
+
+                // We need an update only if a newer version is available AND it's not already installed
+                bool isUpdateAvailable = IsNewVersionAvailable(currentVersion, latestVersion) && !latestVersionExists;
+
+                _logger.LogInformation($"Update check: Current: {currentVersion}, " +
+                                      $"Latest: {latestVersion} (exists: {latestVersionExists}), " +
+                                      $"Update needed: {isUpdateAvailable}");
 
                 return (isUpdateAvailable, latestVersion, currentVersion);
             }
@@ -126,9 +144,22 @@ namespace DriveSync.Infrastructure.Services
                     }
 
                     string latestVersion = latestRelease.tag_name.TrimStart('v');
-                    bool isUpdateAvailable = IsNewVersionAvailable(currentVersion, latestVersion);
 
-                    _logger.LogInformation($"Latest version: {latestVersion}, Update available: {isUpdateAvailable}");
+                    // Add additional checks to verify if latest version is already installed
+                    string baseDirectory = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "DriveSync",
+                        "RcloneVersions"
+                    );
+
+                    // Check if the latest version directory already exists and contains rclone.exe
+                    string latestVersionPath = Path.Combine(baseDirectory, $"v{latestVersion}", "rclone.exe");
+                    bool isLatestVersionInstalled = File.Exists(latestVersionPath);
+
+                    // Only return true for IsUpdateAvailable if a newer version exists and it's not already installed
+                    bool isUpdateAvailable = IsNewVersionAvailable(currentVersion, latestVersion) && !isLatestVersionInstalled;
+
+                    _logger.LogInformation($"Latest version: {latestVersion}, Update available: {isUpdateAvailable}, Already installed: {isLatestVersionInstalled}");
                     return (isUpdateAvailable, latestVersion, currentVersion);
                 }
                 catch (HttpRequestException ex)
@@ -265,6 +296,57 @@ namespace DriveSync.Infrastructure.Services
             }
         }
 
+        public async Task<bool> CanRollbackToVersion(string version)
+        {
+            try
+            {
+                var historyPath = Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    VERSION_HISTORY_FILE
+                );
+
+                // If no version history file exists, there's nothing to roll back to
+                if (!File.Exists(historyPath))
+                {
+                    _logger.LogWarning("No version history found, cannot roll back");
+                    return false;
+                }
+
+                var historyJson = await File.ReadAllTextAsync(historyPath);
+                var history = JsonSerializer.Deserialize<VersionHistory[]>(historyJson);
+
+                // If history is empty or null, there's nothing to roll back to
+                if (history == null || history.Length == 0)
+                {
+                    _logger.LogWarning("Version history is empty, cannot roll back");
+                    return false;
+                }
+
+                var targetVersion = history.FirstOrDefault(v => v.Version == version);
+                if (targetVersion == null)
+                {
+                    _logger.LogWarning($"Version {version} not found in history");
+                    return false;
+                }
+
+                // Check if the file actually exists on disk
+                if (!File.Exists(targetVersion.Path))
+                {
+                    _logger.LogWarning($"Version {version} files not found at {targetVersion.Path}");
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error checking if can roll back to version {version}");
+                return false;
+            }
+        }
+
+
+
         public async Task<bool> RollbackToVersion(string version)
         {
             try
@@ -274,8 +356,10 @@ namespace DriveSync.Infrastructure.Services
                     VERSION_HISTORY_FILE
                 );
 
+                // If no version history file exists, there's nothing to roll back to
                 if (!File.Exists(historyPath))
                 {
+                    _logger.LogWarning("No version history found, cannot roll back");
                     OnErrorOccurred("No version history found", RcloneErrorType.ValidationError);
                     return false;
                 }
@@ -283,22 +367,43 @@ namespace DriveSync.Infrastructure.Services
                 var historyJson = await File.ReadAllTextAsync(historyPath);
                 var history = JsonSerializer.Deserialize<VersionHistory[]>(historyJson);
 
+                // If history is empty or null, there's nothing to roll back to
+                if (history == null || history.Length == 0)
+                {
+                    _logger.LogWarning("Version history is empty, cannot roll back");
+                    OnErrorOccurred("Version history is empty", RcloneErrorType.ValidationError);
+                    return false;
+                }
+
                 var targetVersion = history.FirstOrDefault(v => v.Version == version);
                 if (targetVersion == null)
                 {
+                    _logger.LogWarning($"Version {version} not found in history");
                     OnErrorOccurred($"Version {version} not found in history", RcloneErrorType.ValidationError);
                     return false;
                 }
 
+                // Check if the file actually exists on disk
                 if (!File.Exists(targetVersion.Path))
                 {
+                    _logger.LogWarning($"Version {version} files not found at {targetVersion.Path}");
                     OnErrorOccurred($"Version {version} files not found", RcloneErrorType.ValidationError);
+
+                    // Remove this version from history since it no longer exists
+                    var updatedHistory = history.Where(v => v.Version != version).ToArray();
+                    var updatedHistoryJson = JsonSerializer.Serialize(updatedHistory, new JsonSerializerOptions
+                    {
+                        WriteIndented = true
+                    });
+                    await File.WriteAllTextAsync(historyPath, updatedHistoryJson);
+
                     return false;
                 }
 
                 // Validate the rollback version
                 if (!await ValidateRcloneFile(targetVersion.Path))
                 {
+                    _logger.LogWarning($"Version {version} validation failed");
                     OnErrorOccurred($"Version {version} validation failed", RcloneErrorType.ValidationError);
                     return false;
                 }
@@ -312,6 +417,7 @@ namespace DriveSync.Infrastructure.Services
 
                     if (currentHash != targetVersion.Checksum)
                     {
+                        _logger.LogWarning($"Version {version} checksum mismatch");
                         OnErrorOccurred($"Version {version} checksum mismatch", RcloneErrorType.ValidationError);
                         return false;
                     }
@@ -326,6 +432,7 @@ namespace DriveSync.Infrastructure.Services
                 return false;
             }
         }
+
 
         private async Task<bool> DownloadFileWithProgress(string url, string destinationPath, IProgress<double> progress, long? resumePosition = null)
         {
