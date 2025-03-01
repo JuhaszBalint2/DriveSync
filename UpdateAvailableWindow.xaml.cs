@@ -85,6 +85,9 @@ namespace DriveSync.WPF.Views
                 : (_isFallbackVersion
                     ? $"Latest version download failed. Trying alternative version.\nDownloading version: {targetVersion}"
                     : $"Updating rclone\nCurrent Version: {currentVersion}\nLatest Version: {targetVersion}");
+
+            // Add the Loaded event handler
+            Loaded += OnLoaded;
         }
 
         private void ApplyCurrentTheme()
@@ -177,8 +180,12 @@ namespace DriveSync.WPF.Views
 
         private void StartUpdateProcess()
         {
-            Loaded += UpdateAvailableWindow_Loaded;
-            OnLoaded(new RoutedEventArgs());
+            // The Loaded event handler is already assigned in the constructor
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            UpdateAvailableWindow_Loaded(sender, e);
         }
 
         private async void UpdateAvailableWindow_Loaded(object sender, RoutedEventArgs e)
@@ -186,6 +193,7 @@ namespace DriveSync.WPF.Views
             try
             {
                 _logger?.LogInformation($"Starting {(_isInitialInstall ? "installation" : "update")} of version {_targetVersion} (Fallback: {_isFallbackVersion})");
+
 
                 // Immediately set up the progress bar to be determinate and start at 0
                 Dispatcher.Invoke(() => {
