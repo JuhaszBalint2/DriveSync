@@ -57,13 +57,17 @@
                             Click="LanguageButton_Click"
                             Tag="English"
                             Margin="0,0,16,0"
-                            Padding="16,8"/>
+                            Width="130"
+                            Height="40"
+                            FontSize="14"/>
 
                     <Button Content="Magyar" 
                             Style="{DynamicResource ButtonBaseStyle}"
                             Click="LanguageButton_Click"
                             Tag="Hungarian"
-                            Padding="16,8"/>
+                            Width="130"
+                            Height="40"
+                            FontSize="14"/>
                 </StackPanel>
             </StackPanel>
 
@@ -135,6 +139,7 @@
                     VerticalAlignment="Bottom"
                     Margin="0,20,0,0"
                     Padding="12,6"
+                    Width="90"
                     FontSize="12"
                     Click="LanguageSwitchButton_Click"/>
         </Grid>

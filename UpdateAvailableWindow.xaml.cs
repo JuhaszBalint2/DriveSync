@@ -106,14 +106,23 @@ namespace DriveSync.WPF.Views
 
             DataContext = this;
 
-            // Initialize countdown
-            InitializeCountdown();
-
             // Set initial update message based on installation type and localization
             UpdateUIMessages();
 
+            // Initially, show only the countdown and update panel
+            LocalizationPanel.Visibility = Visibility.Collapsed;
+            UpdatePanel.Visibility = Visibility.Visible;
+            CountdownTextBlock.Visibility = Visibility.Visible;
+
+            // Initialize countdown
+            InitializeCountdown();
+
             // Add the Loaded event handler
-            Loaded += OnLoaded;
+            Loaded += (s, e) =>
+            {
+                // We don't want to start the download immediately on load
+                // Only the countdown should start now
+            };
         }
 
         private void UpdateUIMessages()
@@ -238,7 +247,7 @@ namespace DriveSync.WPF.Views
             if (_remainingSeconds <= 0)
             {
                 _countdownTimer.Stop();
-                ShowUpdatePanel();
+                ShowLanguagePanel();
             }
             else
             {
@@ -251,7 +260,7 @@ namespace DriveSync.WPF.Views
             CountdownMessage = $"Choose language / Válasszon nyelvet ({_remainingSeconds} sec)";
         }
 
-        private void ShowUpdatePanel()
+        private void ShowLanguagePanel()
         {
             LocalizationPanel.Visibility = Visibility.Visible;
             UpdatePanel.Visibility = Visibility.Collapsed;
@@ -277,17 +286,14 @@ namespace DriveSync.WPF.Views
             UpdatePanel.Visibility = Visibility.Visible;
             CountdownTextBlock.Visibility = Visibility.Collapsed;
 
+            // Start the update process immediately after language selection
             StartUpdateProcess();
         }
 
         private void StartUpdateProcess()
         {
-            // The Loaded event handler is already assigned in the constructor
-        }
-
-        private void OnLoaded(object sender, RoutedEventArgs e)
-        {
-            UpdateAvailableWindow_Loaded(sender, e);
+            // Directly start the update process after language selection
+            UpdateAvailableWindow_Loaded(this, null);
         }
 
         private async void UpdateAvailableWindow_Loaded(object sender, RoutedEventArgs e)
