@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
@@ -51,6 +52,20 @@ namespace DriveSync.WPF.Views
             }
         }
 
+        private string _alternateLanguageText;
+        public string AlternateLanguageText
+        {
+            get => _alternateLanguageText;
+            set
+            {
+                if (_alternateLanguageText != value)
+                {
+                    _alternateLanguageText = value;
+                    OnPropertyChanged(nameof(AlternateLanguageText));
+                }
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged(string propertyName)
@@ -74,20 +89,107 @@ namespace DriveSync.WPF.Views
             _targetVersion = targetVersion;
             _isFallbackVersion = isFallbackVersion;
 
+            // Determine if this is an initial install (no current version)
+            _isInitialInstall = string.IsNullOrEmpty(currentVersion) || currentVersion == "0.0.0" || !CheckIfVersionExists(currentVersion);
+
+            // Set alternate language text based on current language
+            UpdateAlternateLanguageText();
+
+            // Listen for language changes and update the button text
+            LocalizationManager.Instance.PropertyChanged += (s, e) =>
+            {
+                if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == "CurrentLanguage")
+                {
+                    UpdateAlternateLanguageText();
+                }
+            };
+
             DataContext = this;
 
             // Initialize countdown
             InitializeCountdown();
 
-            // Set initial update message
-            UpdateMessage = _isInitialInstall
-                ? $"Rclone needs to be installed.\nDownloading version: {targetVersion}"
-                : (_isFallbackVersion
-                    ? $"Latest version download failed. Trying alternative version.\nDownloading version: {targetVersion}"
-                    : $"Updating rclone\nCurrent Version: {currentVersion}\nLatest Version: {targetVersion}");
+            // Set initial update message based on installation type and localization
+            UpdateUIMessages();
 
             // Add the Loaded event handler
             Loaded += OnLoaded;
+        }
+
+        private void UpdateUIMessages()
+        {
+            // Dynamically set messages based on current language and installation type
+            if (_isInitialInstall)
+            {
+                UpdateMessage = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                    ? $"Rclone needs to be installed.\nDownloading version: {_targetVersion}"
+                    : $"Rclone telepítése szükséges.\nVerziós letöltése: {_targetVersion}";
+
+                SubtitleTextBlock.Text = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                    ? "Please wait while DriveSync prepares the update..."
+                    : "Kérjük várjon, amíg a DriveSync előkészíti a frissítést...";
+            }
+            else if (_isFallbackVersion)
+            {
+                UpdateMessage = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                    ? $"Latest version download failed. Trying alternative version.\nDownloading version: {_targetVersion}"
+                    : $"A legújabb verzió letöltése sikertelen. Alternatív verzió próbálása.\nVerziós letöltése: {_targetVersion}";
+
+                SubtitleTextBlock.Text = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                    ? "Please wait while DriveSync prepares the update..."
+                    : "Kérjük várjon, amíg a DriveSync előkészíti a frissítést...";
+            }
+            else
+            {
+                UpdateMessage = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                    ? $"Updating rclone\nCurrent Version: {_currentVersion}\nLatest Version: {_targetVersion}"
+                    : $"Rclone frissítése\nJelenlegi verzió: {_currentVersion}\nLegújabb verzió: {_targetVersion}";
+
+                SubtitleTextBlock.Text = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                    ? "Please wait while DriveSync prepares the update..."
+                    : "Kérjük várjon, amíg a DriveSync előkészíti a frissítést...";
+            }
+        }
+
+        private void UpdateAlternateLanguageText()
+        {
+            // Set the alternate language option based on current language
+            AlternateLanguageText = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                ? "Magyar"
+                : "English";
+
+            // Also update other UI text elements when language changes
+            UpdateUIMessages();
+        }
+
+        private void LanguageSwitchButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Toggle language
+            if (LocalizationManager.Instance.CurrentLanguage == AppLanguage.English)
+            {
+                LocalizationManager.Instance.CurrentLanguage = AppLanguage.Hungarian;
+            }
+            else
+            {
+                LocalizationManager.Instance.CurrentLanguage = AppLanguage.English;
+            }
+
+            // UpdateAlternateLanguageText() will be called via the PropertyChanged event
+        }
+
+        // Check if a specific version exists on disk
+        private bool CheckIfVersionExists(string version)
+        {
+            if (string.IsNullOrEmpty(version)) return false;
+
+            string baseDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "DriveSync",
+                "RcloneVersions"
+            );
+
+            string versionPath = Path.Combine(baseDirectory, $"v{version}", "rclone.exe");
+            return File.Exists(versionPath);
         }
 
         private void ApplyCurrentTheme()
@@ -194,7 +296,6 @@ namespace DriveSync.WPF.Views
             {
                 _logger?.LogInformation($"Starting {(_isInitialInstall ? "installation" : "update")} of version {_targetVersion} (Fallback: {_isFallbackVersion})");
 
-
                 // Immediately set up the progress bar to be determinate and start at 0
                 Dispatcher.Invoke(() => {
                     DownloadProgressBar.IsIndeterminate = false;
@@ -226,7 +327,10 @@ namespace DriveSync.WPF.Views
                         _logger?.LogInformation($"Download progress: {p}%");
 
                         DownloadProgressBar.Value = p;
-                        UpdateMessage = $"Downloading: {p:F1}%";
+                        // Update the message with localized text
+                        UpdateMessage = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                            ? $"Downloading: {p:F1}%"
+                            : $"Letöltés: {p:F1}%";
                     });
                 });
 
@@ -247,15 +351,22 @@ namespace DriveSync.WPF.Views
                     // Ensure progress bar reaches 100%
                     Dispatcher.Invoke(() => {
                         DownloadProgressBar.Value = 100;
-                        UpdateMessage = "Download complete. Preparing initialization...";
+                        // Localize the status message
+                        UpdateMessage = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                            ? "Download complete. Preparing initialization..."
+                            : "Letöltés befejezve. Inicializálás előkészítése...";
                     });
 
                     _logger?.LogInformation("Download completed, preparing initialization");
 
                     // Detailed initialization steps
                     Dispatcher.Invoke(() => {
-                        UpdateMessage = "Verifying downloaded files...";
+                        // Localize the status message
+                        UpdateMessage = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                            ? "Verifying downloaded files..."
+                            : "Letöltött fájlok ellenőrzése...";
                     });
+
                     bool fileValidated = await Task.Run(() => _versionService.ValidateRcloneFile(downloadPath));
 
                     if (!fileValidated)
@@ -264,20 +375,31 @@ namespace DriveSync.WPF.Views
                     }
 
                     Dispatcher.Invoke(() => {
-                        UpdateMessage = "Extracting rclone files...";
+                        // Localize the status message
+                        UpdateMessage = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                            ? "Extracting rclone files..."
+                            : "Rclone fájlok kicsomagolása...";
                     });
 
                     Dispatcher.Invoke(() => {
-                        UpdateMessage = "Initializing rclone manager...";
+                        // Localize the status message
+                        UpdateMessage = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                            ? "Initializing rclone manager..."
+                            : "Rclone kezelő inicializálása...";
                     });
+
                     bool reinitialized = await _rcloneManager.ReinitializeAsync();
 
                     if (reinitialized)
                     {
                         _logger?.LogInformation("Installation/Update successful!");
                         Dispatcher.Invoke(() => {
-                            UpdateMessage = "Initialization complete!";
+                            // Localize the status message
+                            UpdateMessage = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                                ? "Initialization complete!"
+                                : "Inicializálás befejezve!";
                         });
+
                         DialogResult = true;
                         Close();
                     }
@@ -285,15 +407,28 @@ namespace DriveSync.WPF.Views
                     {
                         _logger?.LogWarning("Reinitialization failed");
                         Dispatcher.Invoke(() => {
-                            UpdateMessage = "Initialization failed. Retrying...";
+                            // Localize the status message
+                            UpdateMessage = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                                ? "Initialization failed. Retrying..."
+                                : "Az inicializálás sikertelen. Újrapróbálkozás...";
                         });
 
+                        // Localize the message box text
+                        string messageText = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                            ? "The download was successful but failed to initialize. Please try restarting the application."
+                            : "A letöltés sikeres volt, de az inicializálás sikertelen. Kérjük, indítsa újra az alkalmazást.";
+
+                        string messageTitle = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                            ? "Initialization Error"
+                            : "Inicializálási hiba";
+
                         MessageBox.Show(
-                            "The download was successful but failed to initialize. Please try restarting the application.",
-                            "Initialization Error",
+                            messageText,
+                            messageTitle,
                             MessageBoxButton.OK,
                             MessageBoxImage.Warning
                         );
+
                         DialogResult = false;
                         Close();
                     }
@@ -301,12 +436,23 @@ namespace DriveSync.WPF.Views
                 else
                 {
                     _logger?.LogWarning("Download failed");
+
+                    // Localize the message box text
+                    string messageText = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                        ? "Failed to download the required files. Please check your internet connection and try again."
+                        : "A szükséges fájlok letöltése sikertelen. Kérjük, ellenőrizze az internetkapcsolatot és próbálja újra.";
+
+                    string messageTitle = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                        ? "Download Error"
+                        : "Letöltési hiba";
+
                     MessageBox.Show(
-                        "Failed to download the required files. Please check your internet connection and try again.",
-                        "Download Error",
+                        messageText,
+                        messageTitle,
                         MessageBoxButton.OK,
                         MessageBoxImage.Error
                     );
+
                     DialogResult = false;
                     Close();
                 }
@@ -314,12 +460,23 @@ namespace DriveSync.WPF.Views
             catch (Exception ex)
             {
                 _logger?.LogError(ex, "Error during download");
+
+                // Localize the message box text
+                string messageText = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                    ? $"An error occurred during download: {ex.Message}"
+                    : $"Hiba történt a letöltés során: {ex.Message}";
+
+                string messageTitle = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                    ? "Download Error"
+                    : "Letöltési hiba";
+
                 MessageBox.Show(
-                    $"An error occurred during download: {ex.Message}",
-                    "Download Error",
+                    messageText,
+                    messageTitle,
                     MessageBoxButton.OK,
                     MessageBoxImage.Error
                 );
+
                 DialogResult = false;
                 Close();
             }

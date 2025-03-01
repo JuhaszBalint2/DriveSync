@@ -18,10 +18,10 @@
             CornerRadius="12">
         <Border.Effect>
             <DropShadowEffect Color="Black" 
-                               Opacity="0.3" 
-                               BlurRadius="20" 
-                               ShadowDepth="2" 
-                               Direction="-90"/>
+                              Opacity="0.3" 
+                              BlurRadius="20" 
+                              ShadowDepth="2" 
+                              Direction="-90"/>
         </Border.Effect>
         <Grid Margin="24">
             <Grid.RowDefinitions>
@@ -125,6 +125,18 @@
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap"/>
             </StackPanel>
+
+            <!-- Language switch button in bottom left -->
+            <Button x:Name="LanguageSwitchButton"
+                    Grid.Row="2"
+                    Content="{Binding AlternateLanguageText}"
+                    Style="{DynamicResource ButtonBaseStyle}"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Bottom"
+                    Margin="0,20,0,0"
+                    Padding="12,6"
+                    FontSize="12"
+                    Click="LanguageSwitchButton_Click"/>
         </Grid>
     </Border>
 </Window>
