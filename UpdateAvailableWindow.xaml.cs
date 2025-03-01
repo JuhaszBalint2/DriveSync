@@ -3,7 +3,9 @@ using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 using DriveSync.Infrastructure.Services;
+using DriveSync.WPF.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -18,6 +20,8 @@ namespace DriveSync.WPF.Views
         private readonly string _targetVersion;
         private readonly bool _isInitialInstall;
         private readonly bool _isFallbackVersion;
+        private DispatcherTimer _countdownTimer;
+        private int _remainingSeconds = 5;
 
         private string _updateMessage;
         public string UpdateMessage
@@ -33,6 +37,20 @@ namespace DriveSync.WPF.Views
             }
         }
 
+        private string _countdownMessage;
+        public string CountdownMessage
+        {
+            get => _countdownMessage;
+            set
+            {
+                if (_countdownMessage != value)
+                {
+                    _countdownMessage = value;
+                    OnPropertyChanged(nameof(CountdownMessage));
+                }
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected virtual void OnPropertyChanged(string propertyName)
@@ -42,6 +60,9 @@ namespace DriveSync.WPF.Views
 
         public UpdateAvailableWindow(string currentVersion, string targetVersion, bool isFallbackVersion = false)
         {
+            // Apply the current theme from the app settings
+            ApplyCurrentTheme();
+
             InitializeComponent();
 
             _versionService = App.ServiceProvider.GetService<IRcloneVersionService>();
@@ -53,20 +74,10 @@ namespace DriveSync.WPF.Views
             _targetVersion = targetVersion;
             _isFallbackVersion = isFallbackVersion;
 
-            // Check if this is an initial install (no local version)
-            string baseDirectory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "DriveSync",
-                "RcloneVersions"
-            );
-
-            // Check if any version exists
-            bool anyVersionExists = Directory.Exists(baseDirectory) &&
-                Directory.GetDirectories(baseDirectory, "v*").Length > 0;
-
-            _isInitialInstall = !anyVersionExists;
-
             DataContext = this;
+
+            // Initialize countdown
+            InitializeCountdown();
 
             // Set initial update message
             UpdateMessage = _isInitialInstall
@@ -74,17 +85,100 @@ namespace DriveSync.WPF.Views
                 : (_isFallbackVersion
                     ? $"Latest version download failed. Trying alternative version.\nDownloading version: {targetVersion}"
                     : $"Updating rclone\nCurrent Version: {currentVersion}\nLatest Version: {targetVersion}");
+        }
 
-            // Prevent window from being closed by user
-            Closing += (s, e) =>
+        private void ApplyCurrentTheme()
+        {
+            var settings = AppSettings.Load();
+            string effectiveTheme = settings.GetEffectiveTheme();
+
+            // Remove existing theme dictionaries
+            var appResources = Application.Current.Resources.MergedDictionaries;
+            var existingThemes = appResources
+                .Where(d => d.Source != null &&
+                    (d.Source.ToString().Contains("LightTheme.xaml") ||
+                     d.Source.ToString().Contains("DarkTheme.xaml")))
+                .ToList();
+
+            foreach (var theme in existingThemes)
             {
-                if (DialogResult != true)
-                {
-                    e.Cancel = true;
-                }
-            };
+                appResources.Remove(theme);
+            }
 
+            // Load the appropriate theme
+            string themePath = effectiveTheme.Equals("Dark", StringComparison.OrdinalIgnoreCase)
+                ? "pack://application:,,,/Themes/DarkTheme.xaml"
+                : "pack://application:,,,/Themes/LightTheme.xaml";
+
+            var newTheme = new ResourceDictionary { Source = new Uri(themePath, UriKind.Absolute) };
+            appResources.Add(newTheme);
+        }
+
+        private void InitializeCountdown()
+        {
+            _countdownTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            _countdownTimer.Tick += CountdownTimer_Tick;
+            _countdownTimer.Start();
+
+            UpdateCountdownMessage();
+        }
+
+        private void CountdownTimer_Tick(object sender, EventArgs e)
+        {
+            _remainingSeconds--;
+
+            if (_remainingSeconds <= 0)
+            {
+                _countdownTimer.Stop();
+                ShowUpdatePanel();
+            }
+            else
+            {
+                UpdateCountdownMessage();
+            }
+        }
+
+        private void UpdateCountdownMessage()
+        {
+            CountdownMessage = $"Choose language / Válasszon nyelvet ({_remainingSeconds} sec)";
+        }
+
+        private void ShowUpdatePanel()
+        {
+            LocalizationPanel.Visibility = Visibility.Visible;
+            UpdatePanel.Visibility = Visibility.Collapsed;
+            CountdownTextBlock.Visibility = Visibility.Collapsed;
+        }
+
+        private void LanguageButton_Click(object sender, RoutedEventArgs e)
+        {
+            var button = sender as System.Windows.Controls.Button;
+            if (button == null) return;
+
+            var selectedLanguage = button.Tag?.ToString();
+            if (selectedLanguage == "English")
+            {
+                LocalizationManager.Instance.CurrentLanguage = AppLanguage.English;
+            }
+            else if (selectedLanguage == "Hungarian")
+            {
+                LocalizationManager.Instance.CurrentLanguage = AppLanguage.Hungarian;
+            }
+
+            LocalizationPanel.Visibility = Visibility.Collapsed;
+            UpdatePanel.Visibility = Visibility.Visible;
+            CountdownTextBlock.Visibility = Visibility.Collapsed;
+
+            StartUpdateProcess();
+        }
+
+        private void StartUpdateProcess()
+        {
             Loaded += UpdateAvailableWindow_Loaded;
+            OnLoaded(new RoutedEventArgs());
         }
 
         private async void UpdateAvailableWindow_Loaded(object sender, RoutedEventArgs e)
