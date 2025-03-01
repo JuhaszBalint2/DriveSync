@@ -26,10 +26,12 @@
                        Style="{DynamicResource BodyTextStyle}"
                        Margin="0,0,0,20"
                        TextWrapping="Wrap"/>
-            <ProgressBar IsIndeterminate="True" 
+            <ProgressBar x:Name="DownloadProgressBar" 
+                         IsIndeterminate="True" 
                          Height="10" 
                          Margin="0,0,0,10"/>
-            <TextBlock Text="Please wait while the rclone is being downloaded and installed..."
+            <TextBlock x:Name="SubtitleTextBlock"
+                       Text="Please wait while rclone is being downloaded and installed..."
                        Style="{DynamicResource BodyTextStyle}"
                        HorizontalAlignment="Center"
                        TextWrapping="Wrap"/>

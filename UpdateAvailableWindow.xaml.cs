@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -8,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace DriveSync.WPF.Views
 {
-    public partial class UpdateAvailableWindow : Window
+    public partial class UpdateAvailableWindow : Window, INotifyPropertyChanged
     {
         private readonly IRcloneVersionService _versionService;
         private readonly RcloneManager _rcloneManager;
@@ -18,7 +19,26 @@ namespace DriveSync.WPF.Views
         private readonly bool _isInitialInstall;
         private readonly bool _isFallbackVersion;
 
-        public string UpdateMessage { get; set; }
+        private string _updateMessage;
+        public string UpdateMessage
+        {
+            get => _updateMessage;
+            set
+            {
+                if (_updateMessage != value)
+                {
+                    _updateMessage = value;
+                    OnPropertyChanged(nameof(UpdateMessage));
+                }
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
 
         public UpdateAvailableWindow(string currentVersion, string targetVersion, bool isFallbackVersion = false)
         {
@@ -48,33 +68,12 @@ namespace DriveSync.WPF.Views
 
             DataContext = this;
 
-            // Set appropriate message based on whether this is initial install or update
-            if (_isInitialInstall)
-            {
-                if (_isFallbackVersion)
-                {
-                    Title = "Alternative Rclone Installation";
-                    UpdateMessage = $"Initial download failed. Trying alternative version.\nDownloading version: {targetVersion}";
-                }
-                else
-                {
-                    Title = "Rclone Installation";
-                    UpdateMessage = $"Rclone needs to be installed.\nDownloading version: {targetVersion}";
-                }
-            }
-            else
-            {
-                if (_isFallbackVersion)
-                {
-                    Title = "Alternative Rclone Update";
-                    UpdateMessage = $"Latest version download failed. Trying alternative version.\nDownloading version: {targetVersion}";
-                }
-                else
-                {
-                    Title = "Rclone Update";
-                    UpdateMessage = $"Current Version: {currentVersion}\nLatest Version: {targetVersion}";
-                }
-            }
+            // Set initial update message
+            UpdateMessage = _isInitialInstall
+                ? $"Rclone needs to be installed.\nDownloading version: {targetVersion}"
+                : (_isFallbackVersion
+                    ? $"Latest version download failed. Trying alternative version.\nDownloading version: {targetVersion}"
+                    : $"Updating rclone\nCurrent Version: {currentVersion}\nLatest Version: {targetVersion}");
 
             // Prevent window from being closed by user
             Closing += (s, e) =>
@@ -93,6 +92,15 @@ namespace DriveSync.WPF.Views
             try
             {
                 _logger?.LogInformation($"Starting {(_isInitialInstall ? "installation" : "update")} of version {_targetVersion} (Fallback: {_isFallbackVersion})");
+
+                // Immediately set up the progress bar to be determinate and start at 0
+                Dispatcher.Invoke(() => {
+                    DownloadProgressBar.IsIndeterminate = false;
+                    DownloadProgressBar.Minimum = 0;
+                    DownloadProgressBar.Maximum = 100;
+                    DownloadProgressBar.Value = 0;
+                });
+
                 string baseDirectory = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "DriveSync",
@@ -109,11 +117,14 @@ namespace DriveSync.WPF.Views
                     $"rclone-v{_targetVersion}-windows-amd64.zip"
                 );
 
+                // Modify the progress to use a deterministic progress bar
                 var progress = new Progress<double>(p =>
                 {
                     Dispatcher.Invoke(() => {
                         _logger?.LogInformation($"Download progress: {p}%");
-                        // You can update a progress bar here if needed
+
+                        DownloadProgressBar.Value = p;
+                        UpdateMessage = $"Downloading: {p:F1}%";
                     });
                 });
 
@@ -131,19 +142,50 @@ namespace DriveSync.WPF.Views
 
                 if (downloaded)
                 {
-                    _logger?.LogInformation("Download completed, reinitializing RcloneManager");
-                    // Reinitialize RcloneManager with new version
+                    // Ensure progress bar reaches 100%
+                    Dispatcher.Invoke(() => {
+                        DownloadProgressBar.Value = 100;
+                        UpdateMessage = "Download complete. Preparing initialization...";
+                    });
+
+                    _logger?.LogInformation("Download completed, preparing initialization");
+
+                    // Detailed initialization steps
+                    Dispatcher.Invoke(() => {
+                        UpdateMessage = "Verifying downloaded files...";
+                    });
+                    bool fileValidated = await Task.Run(() => _versionService.ValidateRcloneFile(downloadPath));
+
+                    if (!fileValidated)
+                    {
+                        throw new Exception("File validation failed");
+                    }
+
+                    Dispatcher.Invoke(() => {
+                        UpdateMessage = "Extracting rclone files...";
+                    });
+
+                    Dispatcher.Invoke(() => {
+                        UpdateMessage = "Initializing rclone manager...";
+                    });
                     bool reinitialized = await _rcloneManager.ReinitializeAsync();
 
                     if (reinitialized)
                     {
                         _logger?.LogInformation("Installation/Update successful!");
+                        Dispatcher.Invoke(() => {
+                            UpdateMessage = "Initialization complete!";
+                        });
                         DialogResult = true;
                         Close();
                     }
                     else
                     {
                         _logger?.LogWarning("Reinitialization failed");
+                        Dispatcher.Invoke(() => {
+                            UpdateMessage = "Initialization failed. Retrying...";
+                        });
+
                         MessageBox.Show(
                             "The download was successful but failed to initialize. Please try restarting the application.",
                             "Initialization Error",
