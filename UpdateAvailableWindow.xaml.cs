@@ -4,6 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using DriveSync.Infrastructure.Services;
 using DriveSync.WPF.Localization;
@@ -186,19 +189,378 @@ namespace DriveSync.WPF.Views
             // UpdateAlternateLanguageText() will be called via the PropertyChanged event
         }
 
+        // New method to handle the close button click
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            ShowCloseWarningDialog();
+        }
+
+        // Method to display the custom warning dialog
+        private void ShowCloseWarningDialog()
+        {
+            // Determine if using dark theme for proper styling
+            var settings = AppSettings.Load();
+            bool isDarkTheme = settings.GetEffectiveTheme().Equals("Dark", StringComparison.OrdinalIgnoreCase);
+
+            // Get title text based on current language
+            string titleText = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                ? "Update Aborted"
+                : "Frissítés Megszakítva";
+
+            // Create the styled message box window
+            var dialog = new Window
+            {
+                Width = 450,
+                Height = 220,
+                WindowStyle = WindowStyle.None,
+                AllowsTransparency = true,
+                Background = Brushes.Transparent,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = this,
+                ResizeMode = ResizeMode.NoResize,
+                Title = titleText
+            };
+
+            // Set up the dialog content
+            var mainBorder = new Border
+            {
+                Background = isDarkTheme ? new SolidColorBrush(Color.FromRgb(48, 48, 48)) : new SolidColorBrush(Color.FromRgb(250, 250, 250)),
+                BorderBrush = isDarkTheme ? new SolidColorBrush(Color.FromRgb(97, 97, 97)) : new SolidColorBrush(Color.FromRgb(221, 221, 221)),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Effect = new System.Windows.Media.Effects.DropShadowEffect
+                {
+                    Color = Colors.Black,
+                    Opacity = 0.3,
+                    BlurRadius = 15,
+                    ShadowDepth = 2
+                }
+            };
+
+            var mainGrid = new Grid();
+
+            // Header with title and close button
+            var headerGrid = new Grid
+            {
+                Height = 40
+            };
+
+            var titleTextBlock = new TextBlock
+            {
+                Text = titleText,
+                Foreground = isDarkTheme ? Brushes.White : new SolidColorBrush(Color.FromRgb(33, 33, 33)),
+                FontSize = 16,
+                FontWeight = FontWeights.SemiBold,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(15, 0, 0, 0)
+            };
+
+            var closeButton = new Button
+            {
+                Width = 24,
+                Height = 24,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 10, 0),
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0)
+            };
+
+            closeButton.Content = new TextBlock
+            {
+                Text = "✕",
+                FontSize = 14,
+                FontWeight = FontWeights.Bold,
+                Foreground = isDarkTheme ? Brushes.White : Brushes.Black,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            closeButton.Click += (s, e) =>
+            {
+                dialog.Close();
+                AbortUpdateAndCleanup();
+            };
+
+            headerGrid.Children.Add(titleTextBlock);
+            headerGrid.Children.Add(closeButton);
+
+            // Content area
+            var contentGrid = new Grid
+            {
+                Margin = new Thickness(20, 10, 20, 20)
+            };
+
+            contentGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            contentGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            contentGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+            // Warning icon
+            var iconBorder = new Border
+            {
+                Width = 48,
+                Height = 48,
+                VerticalAlignment = VerticalAlignment.Top,
+                HorizontalAlignment = HorizontalAlignment.Left
+            };
+
+            // Create a warning triangle icon using a Canvas and shapes
+            var canvas = new Canvas
+            {
+                Width = 32,
+                Height = 32
+            };
+
+            var triangle = new Polygon
+            {
+                Points = new PointCollection { new Point(16, 0), new Point(32, 32), new Point(0, 32) },
+                Fill = new SolidColorBrush(Color.FromRgb(255, 204, 0))
+            };
+
+            var exclamation = new TextBlock
+            {
+                Text = "!",
+                FontSize = 20,
+                FontWeight = FontWeights.Bold,
+                Foreground = Brushes.Black,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            Canvas.SetLeft(exclamation, 13);
+            Canvas.SetTop(exclamation, 4);
+
+            canvas.Children.Add(triangle);
+            canvas.Children.Add(exclamation);
+            iconBorder.Child = canvas;
+
+            Grid.SetRow(iconBorder, 0);
+            Grid.SetRowSpan(iconBorder, 2);
+
+            // Message text based on current language
+            var messageText = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                ? "Update aborted. The application may not function correctly until it is updated."
+                : "Frissítés megszakítva. Az alkalmazás esetleg nem fog megfelelően működni, amíg nem frissítik.";
+
+            var messageTextBlock = new TextBlock
+            {
+                Text = messageText,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(60, 0, 0, 15),
+                FontSize = 14,
+                Foreground = isDarkTheme ? Brushes.White : new SolidColorBrush(Color.FromRgb(33, 33, 33)),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetRow(messageTextBlock, 0);
+
+            // Countdown text
+            var countdownTextBlock = new TextBlock
+            {
+                Text = "Closing in 5 seconds...",
+                Margin = new Thickness(60, 0, 0, 0),
+                FontSize = 12,
+                Foreground = isDarkTheme ? new SolidColorBrush(Color.FromRgb(192, 192, 192)) : new SolidColorBrush(Color.FromRgb(117, 117, 117)),
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetRow(countdownTextBlock, 1);
+
+            // OK Button
+            var okButton = new Button
+            {
+                Content = "OK",
+                Width = 80,
+                Height = 30,
+                Margin = new Thickness(0, 15, 0, 0),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Background = isDarkTheme ? new SolidColorBrush(Color.FromRgb(64, 64, 64)) : new SolidColorBrush(Color.FromRgb(225, 225, 225)),
+                Foreground = isDarkTheme ? Brushes.White : Brushes.Black,
+                BorderThickness = new Thickness(1),
+                BorderBrush = isDarkTheme ? new SolidColorBrush(Color.FromRgb(97, 97, 97)) : new SolidColorBrush(Color.FromRgb(173, 173, 173))
+            };
+            Grid.SetRow(okButton, 2);
+
+            okButton.Click += (s, e) =>
+            {
+                dialog.Close();
+                AbortUpdateAndCleanup();
+            };
+
+            contentGrid.Children.Add(iconBorder);
+            contentGrid.Children.Add(messageTextBlock);
+            contentGrid.Children.Add(countdownTextBlock);
+            contentGrid.Children.Add(okButton);
+
+            // Assemble the final layout
+            mainGrid.Children.Add(headerGrid);
+
+            var contentContainer = new Grid
+            {
+                Margin = new Thickness(0, 40, 0, 0)
+            };
+            contentContainer.Children.Add(contentGrid);
+            mainGrid.Children.Add(contentContainer);
+
+            mainBorder.Child = mainGrid;
+            dialog.Content = mainBorder;
+
+            // Create countdown timer
+            var countdownTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
+
+            int secondsRemaining = 5;
+
+            countdownTimer.Tick += (s, e) =>
+            {
+                secondsRemaining--;
+
+                string countdownMessage = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                    ? $"Closing in {secondsRemaining} seconds..."
+                    : $"Bezárás {secondsRemaining} másodperc múlva...";
+
+                countdownTextBlock.Text = countdownMessage;
+
+                if (secondsRemaining <= 0)
+                {
+                    countdownTimer.Stop();
+                    dialog.Close();
+                    AbortUpdateAndCleanup();
+                }
+            };
+
+            // Start countdown when dialog is shown
+            dialog.Loaded += (s, e) => countdownTimer.Start();
+
+            // Show the dialog
+            dialog.ShowDialog();
+        }
+
+        // Method to abort the update and cleanup rclone versions
+        private async void AbortUpdateAndCleanup()
+        {
+            try
+            {
+                string rcloneVersionsPath = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "DriveSync",
+                    "RcloneVersions"
+                );
+
+                _logger?.LogInformation($"Deleting rclone versions directory: {rcloneVersionsPath}");
+
+                // Queue the deletion process to run asynchronously
+                await Task.Run(() =>
+                {
+                    if (System.IO.Directory.Exists(rcloneVersionsPath))
+                    {
+                        try
+                        {
+                            // Use a more aggressive approach to ensure files are deleted
+                            foreach (var dir in System.IO.Directory.GetDirectories(rcloneVersionsPath))
+                            {
+                                try
+                                {
+                                    // Try to make files writable before deletion
+                                    foreach (var file in System.IO.Directory.GetFiles(dir, "*", System.IO.SearchOption.AllDirectories))
+                                    {
+                                        try
+                                        {
+                                            System.IO.File.SetAttributes(file, System.IO.FileAttributes.Normal);
+                                        }
+                                        catch
+                                        {
+                                            // Continue even if setting attributes fails
+                                        }
+                                    }
+
+                                    System.IO.Directory.Delete(dir, true);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger?.LogError(ex, $"Error deleting directory: {dir}");
+                                }
+                            }
+
+                            foreach (var file in System.IO.Directory.GetFiles(rcloneVersionsPath))
+                            {
+                                try
+                                {
+                                    System.IO.File.SetAttributes(file, System.IO.FileAttributes.Normal);
+                                    System.IO.File.Delete(file);
+                                }
+                                catch (Exception ex)
+                                {
+                                    _logger?.LogError(ex, $"Error deleting file: {file}");
+                                }
+                            }
+
+                            // Then try to delete the main directory
+                            try
+                            {
+                                System.IO.Directory.Delete(rcloneVersionsPath, true);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger?.LogError(ex, $"Error deleting main directory: {rcloneVersionsPath}");
+
+                                // If we can't delete the directory, try to at least rename it to indicate it's no longer valid
+                                try
+                                {
+                                    string invalidDir = System.IO.Path.Combine(
+                                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                                        "DriveSync",
+                                        "RcloneVersions_Invalid_" + DateTime.Now.ToString("yyyyMMddHHmmss")
+                                    );
+
+                                    System.IO.Directory.Move(rcloneVersionsPath, invalidDir);
+                                }
+                                catch
+                                {
+                                    // Ignore if rename fails
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.LogError(ex, "Error cleaning up directory structure");
+                        }
+                    }
+                });
+
+                // Close the application completely
+                DialogResult = false;
+                Close();
+
+                // Shutdown the application entirely
+                Application.Current.Shutdown();
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error during cleanup");
+
+                // Close the application even if cleanup fails
+                DialogResult = false;
+                Close();
+
+                // Shutdown the application entirely
+                Application.Current.Shutdown();
+            }
+        }
+
         // Check if a specific version exists on disk
         private bool CheckIfVersionExists(string version)
         {
             if (string.IsNullOrEmpty(version)) return false;
 
-            string baseDirectory = Path.Combine(
+            string baseDirectory = System.IO.Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "DriveSync",
                 "RcloneVersions"
             );
 
-            string versionPath = Path.Combine(baseDirectory, $"v{version}", "rclone.exe");
-            return File.Exists(versionPath);
+            string versionPath = System.IO.Path.Combine(baseDirectory, $"v{version}", "rclone.exe");
+            return System.IO.File.Exists(versionPath);
         }
 
         private void ApplyCurrentTheme()
@@ -310,18 +672,18 @@ namespace DriveSync.WPF.Views
                     DownloadProgressBar.Value = 0;
                 });
 
-                string baseDirectory = Path.Combine(
+                string baseDirectory = System.IO.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "DriveSync",
                     "RcloneVersions"
                 );
 
-                if (!Directory.Exists(baseDirectory))
+                if (!System.IO.Directory.Exists(baseDirectory))
                 {
-                    Directory.CreateDirectory(baseDirectory);
+                    System.IO.Directory.CreateDirectory(baseDirectory);
                 }
 
-                string downloadPath = Path.Combine(
+                string downloadPath = System.IO.Path.Combine(
                     baseDirectory,
                     $"rclone-v{_targetVersion}-windows-amd64.zip"
                 );
