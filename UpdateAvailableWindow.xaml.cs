@@ -239,7 +239,7 @@ namespace DriveSync.WPF.Views
 
             var mainGrid = new Grid();
 
-            // Header with title and close button
+            // Header with title
             var headerGrid = new Grid
             {
                 Height = 40
@@ -252,38 +252,10 @@ namespace DriveSync.WPF.Views
                 FontSize = 16,
                 FontWeight = FontWeights.SemiBold,
                 VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(15, 0, 0, 0)
-            };
-
-            var closeButton = new Button
-            {
-                Width = 24,
-                Height = 24,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(0, 0, 10, 0),
-                Background = Brushes.Transparent,
-                BorderThickness = new Thickness(0)
-            };
-
-            closeButton.Content = new TextBlock
-            {
-                Text = "✕",
-                FontSize = 14,
-                FontWeight = FontWeights.Bold,
-                Foreground = isDarkTheme ? Brushes.White : Brushes.Black,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-
-            closeButton.Click += (s, e) =>
-            {
-                dialog.Close();
-                AbortUpdateAndCleanup();
+                HorizontalAlignment = HorizontalAlignment.Center
             };
 
             headerGrid.Children.Add(titleTextBlock);
-            headerGrid.Children.Add(closeButton);
 
             // Content area
             var contentGrid = new Grid
@@ -360,15 +332,16 @@ namespace DriveSync.WPF.Views
             };
             Grid.SetRow(countdownContainer, 1);
 
-            // Countdown text with improved layout for Hungarian text
+            // Countdown Text with improved layout for Hungarian text
             var countdownTextBlock = new TextBlock
             {
-                FontSize = 12,
-                MaxWidth = 330,  // Increased maximum width
+                FontSize = 16, // Adjusted font size
+                FontWeight = FontWeights.Bold,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Left, // Align to the left
+                Foreground = isDarkTheme ? Brushes.White : new SolidColorBrush(Color.FromRgb(33, 33, 33)),
                 TextWrapping = TextWrapping.Wrap,
-                HorizontalAlignment = HorizontalAlignment.Left,
-                Foreground = isDarkTheme ? new SolidColorBrush(Color.FromRgb(192, 192, 192)) : new SolidColorBrush(Color.FromRgb(117, 117, 117)),
-                VerticalAlignment = VerticalAlignment.Center
+                MaxWidth = 330 // Increased maximum width
             };
 
             countdownContainer.Children.Add(countdownTextBlock);
@@ -379,8 +352,8 @@ namespace DriveSync.WPF.Views
                 Content = "OK",
                 Width = 80,
                 Height = 30,
-                Margin = new Thickness(0, 15, 0, 0),
-                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 20, 0, 0),
+                HorizontalAlignment = HorizontalAlignment.Center,
                 Background = isDarkTheme ? new SolidColorBrush(Color.FromRgb(64, 64, 64)) : new SolidColorBrush(Color.FromRgb(225, 225, 225)),
                 Foreground = isDarkTheme ? Brushes.White : Brushes.Black,
                 BorderThickness = new Thickness(1),
@@ -396,7 +369,7 @@ namespace DriveSync.WPF.Views
 
             contentGrid.Children.Add(iconBorder);
             contentGrid.Children.Add(messageTextBlock);
-            contentGrid.Children.Add(countdownContainer);
+            contentGrid.Children.Add(countdownContainer); // Use the countdown container
             contentGrid.Children.Add(okButton);
 
             // Assemble the final layout
