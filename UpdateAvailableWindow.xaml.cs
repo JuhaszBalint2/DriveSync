@@ -211,7 +211,7 @@ namespace DriveSync.WPF.Views
             var dialog = new Window
             {
                 Width = 450,
-                Height = 220,
+                Height = 270,
                 WindowStyle = WindowStyle.None,
                 AllowsTransparency = true,
                 Background = Brushes.Transparent,
@@ -353,16 +353,25 @@ namespace DriveSync.WPF.Views
             };
             Grid.SetRow(messageTextBlock, 0);
 
-            // Countdown text
+            // Special container just for the countdown text to ensure it has enough space
+            var countdownContainer = new Grid
+            {
+                Margin = new Thickness(60, 0, 0, 0)
+            };
+            Grid.SetRow(countdownContainer, 1);
+
+            // Countdown text with improved layout for Hungarian text
             var countdownTextBlock = new TextBlock
             {
-                Text = "Closing in 5 seconds...",
-                Margin = new Thickness(60, 0, 0, 0),
                 FontSize = 12,
+                MaxWidth = 330,  // Increased maximum width
+                TextWrapping = TextWrapping.Wrap,
+                HorizontalAlignment = HorizontalAlignment.Left,
                 Foreground = isDarkTheme ? new SolidColorBrush(Color.FromRgb(192, 192, 192)) : new SolidColorBrush(Color.FromRgb(117, 117, 117)),
                 VerticalAlignment = VerticalAlignment.Center
             };
-            Grid.SetRow(countdownTextBlock, 1);
+
+            countdownContainer.Children.Add(countdownTextBlock);
 
             // OK Button
             var okButton = new Button
@@ -387,7 +396,7 @@ namespace DriveSync.WPF.Views
 
             contentGrid.Children.Add(iconBorder);
             contentGrid.Children.Add(messageTextBlock);
-            contentGrid.Children.Add(countdownTextBlock);
+            contentGrid.Children.Add(countdownContainer);
             contentGrid.Children.Add(okButton);
 
             // Assemble the final layout
@@ -428,6 +437,12 @@ namespace DriveSync.WPF.Views
                     AbortUpdateAndCleanup();
                 }
             };
+
+            // Set initial countdown text
+            string initialCountdownMessage = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
+                ? $"Closing in {secondsRemaining} seconds..."
+                : $"Bezárás {secondsRemaining} másodperc múlva...";
+            countdownTextBlock.Text = initialCountdownMessage;
 
             // Start countdown when dialog is shown
             dialog.Loaded += (s, e) => countdownTimer.Start();
