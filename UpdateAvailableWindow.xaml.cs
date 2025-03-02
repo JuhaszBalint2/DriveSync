@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
@@ -196,29 +197,24 @@ namespace DriveSync.WPF.Views
         }
 
         // Method to display the custom warning dialog
+        // Method to display the custom warning dialog
         private void ShowCloseWarningDialog()
         {
             // Determine if using dark theme for proper styling
             var settings = AppSettings.Load();
             bool isDarkTheme = settings.GetEffectiveTheme().Equals("Dark", StringComparison.OrdinalIgnoreCase);
 
-            // Get title text based on current language
-            string titleText = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
-                ? "Update Aborted"
-                : "Frissítés Megszakítva";
-
             // Create the styled message box window
             var dialog = new Window
             {
                 Width = 450,
-                Height = 270,
+                Height = 220,
                 WindowStyle = WindowStyle.None,
                 AllowsTransparency = true,
                 Background = Brushes.Transparent,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
                 Owner = this,
-                ResizeMode = ResizeMode.NoResize,
-                Title = titleText
+                ResizeMode = ResizeMode.NoResize
             };
 
             // Set up the dialog content
@@ -237,30 +233,9 @@ namespace DriveSync.WPF.Views
                 }
             };
 
-            var mainGrid = new Grid();
-
-            // Header with title
-            var headerGrid = new Grid
-            {
-                Height = 40
-            };
-
-            var titleTextBlock = new TextBlock
-            {
-                Text = titleText,
-                Foreground = isDarkTheme ? Brushes.White : new SolidColorBrush(Color.FromRgb(33, 33, 33)),
-                FontSize = 16,
-                FontWeight = FontWeights.SemiBold,
-                VerticalAlignment = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Center
-            };
-
-            headerGrid.Children.Add(titleTextBlock);
-
-            // Content area
             var contentGrid = new Grid
             {
-                Margin = new Thickness(20, 10, 20, 20)
+                Margin = new Thickness(20)
             };
 
             contentGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -309,10 +284,10 @@ namespace DriveSync.WPF.Views
             Grid.SetRow(iconBorder, 0);
             Grid.SetRowSpan(iconBorder, 2);
 
-            // Message text based on current language
+            // Message text based on current language - Now bold but with original positioning
             var messageText = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
-                ? "Update aborted. The application may not function correctly until it is updated."
-                : "Frissítés megszakítva. Az alkalmazás esetleg nem fog megfelelően működni, amíg nem frissítik.";
+                ? "The application may not function correctly until it is updated."
+                : "Az alkalmazás esetleg nem fog megfelelően működni, amíg nem frissítik.";
 
             var messageTextBlock = new TextBlock
             {
@@ -320,31 +295,24 @@ namespace DriveSync.WPF.Views
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(60, 0, 0, 15),
                 FontSize = 14,
+                FontWeight = FontWeights.Bold,
                 Foreground = isDarkTheme ? Brushes.White : new SolidColorBrush(Color.FromRgb(33, 33, 33)),
                 VerticalAlignment = VerticalAlignment.Center
             };
             Grid.SetRow(messageTextBlock, 0);
 
-            // Special container just for the countdown text to ensure it has enough space
-            var countdownContainer = new Grid
-            {
-                Margin = new Thickness(60, 0, 0, 0)
-            };
-            Grid.SetRow(countdownContainer, 1);
-
-            // Countdown Text with improved layout for Hungarian text
+            // Countdown Text - Centered with bold and seconds underlined
             var countdownTextBlock = new TextBlock
             {
-                FontSize = 16, // Adjusted font size
+                FontSize = 16,
                 FontWeight = FontWeights.Bold,
+                HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Left, // Align to the left
+                TextAlignment = TextAlignment.Center,
                 Foreground = isDarkTheme ? Brushes.White : new SolidColorBrush(Color.FromRgb(33, 33, 33)),
-                TextWrapping = TextWrapping.Wrap,
-                MaxWidth = 330 // Increased maximum width
+                Margin = new Thickness(0, 10, 0, 15)
             };
-
-            countdownContainer.Children.Add(countdownTextBlock);
+            Grid.SetRow(countdownTextBlock, 1);
 
             // OK Button
             var okButton = new Button
@@ -352,7 +320,6 @@ namespace DriveSync.WPF.Views
                 Content = "OK",
                 Width = 80,
                 Height = 30,
-                Margin = new Thickness(0, 20, 0, 0),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 Background = isDarkTheme ? new SolidColorBrush(Color.FromRgb(64, 64, 64)) : new SolidColorBrush(Color.FromRgb(225, 225, 225)),
                 Foreground = isDarkTheme ? Brushes.White : Brushes.Black,
@@ -369,20 +336,10 @@ namespace DriveSync.WPF.Views
 
             contentGrid.Children.Add(iconBorder);
             contentGrid.Children.Add(messageTextBlock);
-            contentGrid.Children.Add(countdownContainer); // Use the countdown container
+            contentGrid.Children.Add(countdownTextBlock);
             contentGrid.Children.Add(okButton);
 
-            // Assemble the final layout
-            mainGrid.Children.Add(headerGrid);
-
-            var contentContainer = new Grid
-            {
-                Margin = new Thickness(0, 40, 0, 0)
-            };
-            contentContainer.Children.Add(contentGrid);
-            mainGrid.Children.Add(contentContainer);
-
-            mainBorder.Child = mainGrid;
+            mainBorder.Child = contentGrid;
             dialog.Content = mainBorder;
 
             // Create countdown timer
@@ -391,17 +348,35 @@ namespace DriveSync.WPF.Views
                 Interval = TimeSpan.FromSeconds(1)
             };
 
-            int secondsRemaining = 5;
+            int secondsRemaining = 4;
 
             countdownTimer.Tick += (s, e) =>
             {
                 secondsRemaining--;
 
-                string countdownMessage = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
-                    ? $"Closing in {secondsRemaining} seconds..."
-                    : $"Bezárás {secondsRemaining} másodperc múlva...";
-
-                countdownTextBlock.Text = countdownMessage;
+                // Create text with formatted seconds (bold and underlined)
+                if (LocalizationManager.Instance.CurrentLanguage == AppLanguage.English)
+                {
+                    countdownTextBlock.Inlines.Clear();
+                    countdownTextBlock.Inlines.Add("Closing in ");
+                    var secondsRun = new Run(secondsRemaining.ToString())
+                    {
+                        TextDecorations = TextDecorations.Underline
+                    };
+                    countdownTextBlock.Inlines.Add(secondsRun);
+                    countdownTextBlock.Inlines.Add(" seconds...");
+                }
+                else // Hungarian
+                {
+                    countdownTextBlock.Inlines.Clear();
+                    countdownTextBlock.Inlines.Add("Bezárás ");
+                    var secondsRun = new Run(secondsRemaining.ToString())
+                    {
+                        TextDecorations = TextDecorations.Underline
+                    };
+                    countdownTextBlock.Inlines.Add(secondsRun);
+                    countdownTextBlock.Inlines.Add(" másodperc múlva...");
+                }
 
                 if (secondsRemaining <= 0)
                 {
@@ -411,11 +386,29 @@ namespace DriveSync.WPF.Views
                 }
             };
 
-            // Set initial countdown text
-            string initialCountdownMessage = LocalizationManager.Instance.CurrentLanguage == AppLanguage.English
-                ? $"Closing in {secondsRemaining} seconds..."
-                : $"Bezárás {secondsRemaining} másodperc múlva...";
-            countdownTextBlock.Text = initialCountdownMessage;
+            // Set initial countdown text with formatted seconds (bold and underlined)
+            if (LocalizationManager.Instance.CurrentLanguage == AppLanguage.English)
+            {
+                countdownTextBlock.Inlines.Clear();
+                countdownTextBlock.Inlines.Add("Closing in ");
+                var secondsRun = new Run(secondsRemaining.ToString())
+                {
+                    TextDecorations = TextDecorations.Underline
+                };
+                countdownTextBlock.Inlines.Add(secondsRun);
+                countdownTextBlock.Inlines.Add(" seconds...");
+            }
+            else // Hungarian
+            {
+                countdownTextBlock.Inlines.Clear();
+                countdownTextBlock.Inlines.Add("Bezárás ");
+                var secondsRun = new Run(secondsRemaining.ToString())
+                {
+                    TextDecorations = TextDecorations.Underline
+                };
+                countdownTextBlock.Inlines.Add(secondsRun);
+                countdownTextBlock.Inlines.Add(" másodperc múlva...");
+            }
 
             // Start countdown when dialog is shown
             dialog.Loaded += (s, e) => countdownTimer.Start();
