@@ -188,6 +188,12 @@ namespace DriveSync.WPF.ViewModels
         {
             if (string.IsNullOrWhiteSpace(SelectedSourceRemote))
             {
+                ThemedMessageBox.Show(
+                    LocalizationManager.Instance["PleaseSelectSourceRemoteFirst"],
+                    LocalizationManager.Instance["Error"],
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning
+                );
                 StatusMessage = LocalizationManager.Instance["PleaseSelectSourceRemoteFirst"];
                 StatusIndicatorBrush = ColorDelete;
                 return;
@@ -196,7 +202,7 @@ namespace DriveSync.WPF.ViewModels
             try
             {
                 var logger = _loggerFactory.CreateLogger<DirectoryBrowserViewModel>();
-                var viewModel = new DirectoryBrowserViewModel(_rcloneService, logger, SelectedSourceRemote);
+                var viewModel = new DirectoryBrowserViewModel(_rcloneService, logger, SelectedSourceRemote, true);
                 var dialog = new DirectoryBrowserDialog(viewModel);
 
                 if (Application.Current.MainWindow != null)
@@ -222,12 +228,17 @@ namespace DriveSync.WPF.ViewModels
             }
         }
 
-        // Command for Browse Target
         [RelayCommand]
         private async Task BrowseTarget()
         {
             if (string.IsNullOrWhiteSpace(SelectedTargetRemote))
             {
+                ThemedMessageBox.Show(
+                    LocalizationManager.Instance["PleaseSelectTargetRemoteFirst"],
+                    LocalizationManager.Instance["Error"],
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning
+                );
                 StatusMessage = LocalizationManager.Instance["PleaseSelectTargetRemoteFirst"];
                 StatusIndicatorBrush = ColorDelete;
                 return;
@@ -236,7 +247,7 @@ namespace DriveSync.WPF.ViewModels
             try
             {
                 var logger = _loggerFactory.CreateLogger<DirectoryBrowserViewModel>();
-                var viewModel = new DirectoryBrowserViewModel(_rcloneService, logger, SelectedTargetRemote);
+                var viewModel = new DirectoryBrowserViewModel(_rcloneService, logger, SelectedTargetRemote, false);
                 var dialog = new DirectoryBrowserDialog(viewModel);
 
                 if (Application.Current.MainWindow != null)

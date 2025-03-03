@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Win32.TaskScheduler;
 using DriveSync.Infrastructure.Services;
 using DriveSync.WPF.ViewModels;
+using DriveSync.WPF.Localization;
 
 namespace DriveSync.WPF.Views
 {
@@ -246,14 +247,17 @@ namespace DriveSync.WPF.Views
         {
             if (string.IsNullOrWhiteSpace(SelectedSourceRemote))
             {
-                MessageBox.Show("Please select a source remote first.",
-                                "No Remote",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Warning);
+                ThemedMessageBox.Show(
+                    LocalizationManager.Instance["PleaseSelectSourceRemoteFirst"],
+                    LocalizationManager.Instance["Error"],
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning
+                );
                 return;
             }
+
             var logger = _loggerFactory.CreateLogger<DirectoryBrowserViewModel>();
-            var vm = new DirectoryBrowserViewModel(_rcloneService, logger, SelectedSourceRemote);
+            var vm = new DirectoryBrowserViewModel(_rcloneService, logger, SelectedSourceRemote, true);
             var dialog = new DirectoryBrowserDialog(vm);
             if (dialog.ShowDialog() == true)
             {
@@ -265,14 +269,17 @@ namespace DriveSync.WPF.Views
         {
             if (string.IsNullOrWhiteSpace(SelectedTargetRemote))
             {
-                MessageBox.Show("Please select a target remote first.",
-                                "No Remote",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Warning);
+                ThemedMessageBox.Show(
+                    LocalizationManager.Instance["PleaseSelectTargetRemoteFirst"],
+                    LocalizationManager.Instance["Error"],
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning
+                );
                 return;
             }
+
             var logger = _loggerFactory.CreateLogger<DirectoryBrowserViewModel>();
-            var vm = new DirectoryBrowserViewModel(_rcloneService, logger, SelectedTargetRemote);
+            var vm = new DirectoryBrowserViewModel(_rcloneService, logger, SelectedTargetRemote, false);
             var dialog = new DirectoryBrowserDialog(vm);
             if (dialog.ShowDialog() == true)
             {

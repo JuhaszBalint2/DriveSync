@@ -13,6 +13,7 @@ namespace DriveSync.WPF.ViewModels
         private readonly IRcloneService _rcloneService;
         private readonly ILogger<DirectoryBrowserViewModel> _logger;
         private readonly string _remoteName;
+        private readonly bool _isSourceRemote;
         private DirectoryItem _selectedItem;
 
         public DirectoryItem SelectedItem
@@ -55,18 +56,26 @@ namespace DriveSync.WPF.ViewModels
             set => SetProperty(ref _hasSelection, value);
         }
 
+        public bool IsSourceRemote => _isSourceRemote;
+        public string RemoteName => _remoteName;
+
         public string SelectedPath => SelectedItem?.Name;
 
         public DirectoryBrowserViewModel(
             IRcloneService rcloneService,
             ILogger<DirectoryBrowserViewModel> logger,
-            string remoteName)
+            string remoteName,
+            bool isSourceRemote = true)
         {
             _rcloneService = rcloneService;
             _logger = logger;
             _remoteName = remoteName;
+            _isSourceRemote = isSourceRemote;
 
-            DialogTitle = string.Format(LocalizationManager.Instance["SelectDirectoryFromRemote"], remoteName);
+            DialogTitle = string.Format(
+                LocalizationManager.Instance["SelectDirectoryFromRemote"],
+                remoteName
+            );
             Items = new ObservableCollection<DirectoryItem>();
             LoadDirectoriesAsync().ConfigureAwait(false);
 
@@ -74,7 +83,10 @@ namespace DriveSync.WPF.ViewModels
             {
                 if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == "CurrentLanguage")
                 {
-                    DialogTitle = string.Format(LocalizationManager.Instance["SelectDirectoryFromRemote"], remoteName);
+                    DialogTitle = string.Format(
+                        LocalizationManager.Instance["SelectDirectoryFromRemote"],
+                        remoteName
+                    );
                 }
             };
         }
