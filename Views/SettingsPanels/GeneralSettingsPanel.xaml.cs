@@ -73,6 +73,20 @@ namespace DriveSync.WPF.Views.SettingsPanels
                 Filter = "Executable files (*.exe)|*.exe|All files (*.*)|*.*",
                 Title = "Select Rclone Executable"
             };
+
+            // If the current path exists and is a valid file path, set it as the initial directory
+            if (!string.IsNullOrWhiteSpace(RclonePathTextBox.Text) &&
+                File.Exists(RclonePathTextBox.Text))
+            {
+                dialog.InitialDirectory = Path.GetDirectoryName(RclonePathTextBox.Text);
+                dialog.FileName = Path.GetFileName(RclonePathTextBox.Text);
+            }
+            else
+            {
+                // Fallback to some default directories if the current path is invalid
+                dialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            }
+
             if (dialog.ShowDialog() == true)
             {
                 RclonePathTextBox.Text = dialog.FileName;

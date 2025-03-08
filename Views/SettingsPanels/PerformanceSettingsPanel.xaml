@@ -6,6 +6,22 @@
              SnapsToDevicePixels="True"
              TextOptions.TextFormattingMode="Display"
              TextOptions.TextRenderingMode="ClearType">
+
+    <UserControl.Resources>
+        <Style x:Key="CenteredComboBoxItemStyle" TargetType="ComboBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="0,0,0,0"/>
+        </Style>
+
+        <Style x:Key="CenteredComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="0,0,0,0"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource CenteredComboBoxItemStyle}"/>
+        </Style>
+    </UserControl.Resources>
+
     <StackPanel>
         <!-- Transfer Settings Group -->
         <Border Background="{DynamicResource SurfaceBrush}"
@@ -22,29 +38,65 @@
                 <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ParallelTransfers]}"
                            Style="{DynamicResource BodyTextStyle}"
                            Margin="0,0,0,8"/>
-                <TextBox x:Name="TransfersTextBox"
+                <ComboBox x:Name="TransfersTextBox"
                          Height="28"
-                         Width="200"
+                         Width="70"
+                         Style="{StaticResource CenteredComboBoxStyle}"
                          ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ParallelTransfersTooltip]}"
-                         HorizontalAlignment="Left"/>
+                         HorizontalAlignment="Left">
+                    <ComboBoxItem Content="1"/>
+                    <ComboBoxItem Content="2"/>
+                    <ComboBoxItem Content="4"/>
+                    <ComboBoxItem Content="8"/>
+                    <ComboBoxItem Content="12"/>
+                    <ComboBoxItem Content="16"/>
+                    <ComboBoxItem Content="20"/>
+                    <ComboBoxItem Content="24"/>
+                    <ComboBoxItem Content="28"/>
+                    <ComboBoxItem Content="32"/>
+                </ComboBox>
 
                 <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CheckWorkers]}"
                            Style="{DynamicResource BodyTextStyle}"
                            Margin="0,16,0,8"/>
-                <TextBox x:Name="CheckersTextBox"
+                <ComboBox x:Name="CheckersTextBox"
                          Height="28"
-                         Width="200"
+                         Width="70"
+                         Style="{StaticResource CenteredComboBoxStyle}"
                          ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CheckWorkersTooltip]}"
-                         HorizontalAlignment="Left"/>
+                         HorizontalAlignment="Left">
+                    <ComboBoxItem Content="1"/>
+                    <ComboBoxItem Content="2"/>
+                    <ComboBoxItem Content="4"/>
+                    <ComboBoxItem Content="8"/>
+                    <ComboBoxItem Content="16"/>
+                    <ComboBoxItem Content="24"/>
+                    <ComboBoxItem Content="32"/>
+                    <ComboBoxItem Content="48"/>
+                    <ComboBoxItem Content="56"/>
+                    <ComboBoxItem Content="64"/>
+                </ComboBox>
 
                 <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BufferSize]}"
                            Style="{DynamicResource BodyTextStyle}"
                            Margin="0,16,0,8"/>
-                <TextBox x:Name="BufferSizeTextBox"
+                <ComboBox x:Name="BufferSizeTextBox"
                          Height="28"
-                         Width="200"
+                         Width="80"
+                         Style="{StaticResource CenteredComboBoxStyle}"
                          ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BufferSizeTooltip]}"
-                         HorizontalAlignment="Left"/>
+                         HorizontalAlignment="Left">
+                    <ComboBoxItem Content="4"/>
+                    <ComboBoxItem Content="8"/>
+                    <ComboBoxItem Content="16"/>
+                    <ComboBoxItem Content="32"/>
+                    <ComboBoxItem Content="64"/>
+                    <ComboBoxItem Content="128"/>
+                    <ComboBoxItem Content="256"/>
+                    <ComboBoxItem Content="512"/>
+                    <ComboBoxItem Content="768"/>
+                    <ComboBoxItem Content="1024"/>
+                </ComboBox>
 
                 <CheckBox x:Name="UseMemoryMappingCheckBox"
                           Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[UseMemoryMapping]}"
@@ -67,18 +119,31 @@
                 <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BandwidthLimitMiBs]}"
                            Style="{DynamicResource BodyTextStyle}"
                            Margin="0,0,0,8"/>
-                <TextBox x:Name="BandwidthLimitTextBox"
+                <ComboBox x:Name="BandwidthLimitTextBox"
                          Height="28"
-                         Width="200"
+                         Width="80"
+                         Style="{StaticResource CenteredComboBoxStyle}"
                          ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BandwidthLimitTooltip]}"
-                         HorizontalAlignment="Left"/>
+                         HorizontalAlignment="Left">
+                    <ComboBoxItem Content="0"/>
+                    <ComboBoxItem Content="1"/>
+                    <ComboBoxItem Content="2"/>
+                    <ComboBoxItem Content="5"/>
+                    <ComboBoxItem Content="10"/>
+                    <ComboBoxItem Content="20"/>
+                    <ComboBoxItem Content="50"/>
+                    <ComboBoxItem Content="100"/>
+                    <ComboBoxItem Content="200"/>
+                    <ComboBoxItem Content="500"/>
+                </ComboBox>
 
                 <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CutoffMode]}"
                            Style="{DynamicResource BodyTextStyle}"
                            Margin="0,16,0,8"/>
                 <ComboBox x:Name="CutoffModeCombo"
                           Height="28"
-                          Width="200"
+                          Width="110"
+                          Style="{StaticResource CenteredComboBoxStyle}"
                           ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CutoffModeTooltip]}"
                           HorizontalAlignment="Left">
                     <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[CutoffModeHard]}"/>

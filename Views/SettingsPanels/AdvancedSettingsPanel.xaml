@@ -6,7 +6,7 @@
              SnapsToDevicePixels="True"
              TextOptions.TextFormattingMode="Display"
              TextOptions.TextRenderingMode="ClearType">
-    
+
     <StackPanel>
         <!-- Error Handling and Retry Section -->
         <Border Background="{DynamicResource SurfaceBrush}"
@@ -22,19 +22,41 @@
                 <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[RetryCount]}"
                            Style="{DynamicResource BodyTextStyle}"
                            Margin="0,0,0,8"/>
-                <TextBox x:Name="RetryCountTextBox"
+                <ComboBox x:Name="RetryCountTextBox"
                          Height="28"
                          Width="200"
                          HorizontalAlignment="Left"
-                         ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[RetryCountTooltip]}"/>
+                         ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[RetryCountTooltip]}">
+                    <ComboBoxItem Content="1"/>
+                    <ComboBoxItem Content="2"/>
+                    <ComboBoxItem Content="3"/>
+                    <ComboBoxItem Content="5"/>
+                    <ComboBoxItem Content="7"/>
+                    <ComboBoxItem Content="10"/>
+                    <ComboBoxItem Content="15"/>
+                    <ComboBoxItem Content="20"/>
+                    <ComboBoxItem Content="25"/>
+                    <ComboBoxItem Content="30"/>
+                </ComboBox>
                 <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ConnectionTimeout]}"
                            Style="{DynamicResource BodyTextStyle}"
                            Margin="0,16,0,8"/>
-                <TextBox x:Name="ConnectTimeoutTextBox"
+                <ComboBox x:Name="ConnectTimeoutTextBox"
                          Height="28"
                          Width="200"
                          HorizontalAlignment="Left"
-                         ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ConnectionTimeoutTooltip]}"/>
+                         ToolTip="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ConnectionTimeoutTooltip]}">
+                    <ComboBoxItem Content="30"/>
+                    <ComboBoxItem Content="60"/>
+                    <ComboBoxItem Content="120"/>
+                    <ComboBoxItem Content="180"/>
+                    <ComboBoxItem Content="300"/>
+                    <ComboBoxItem Content="600"/>
+                    <ComboBoxItem Content="900"/>
+                    <ComboBoxItem Content="1200"/>
+                    <ComboBoxItem Content="1800"/>
+                    <ComboBoxItem Content="3600"/>
+                </ComboBox>
             </StackPanel>
         </Border>
         <!-- Advanced Transfer Options -->

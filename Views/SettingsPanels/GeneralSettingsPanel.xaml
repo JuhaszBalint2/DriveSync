@@ -32,9 +32,11 @@
                     </Grid.ColumnDefinitions>
 
                     <TextBox x:Name="RclonePathTextBox"
-                             Height="36"
-                             VerticalContentAlignment="Center" Width="Auto"/>
-
+         Height="36"
+         VerticalContentAlignment="Center" 
+         Width="Auto"
+         ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}"/>
+                    
                     <Button Grid.Column="1"
                             Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[BrowseRclone]}"
                             Style="{DynamicResource ButtonBaseStyle}"
