@@ -71,16 +71,22 @@ namespace DriveSync.WPF.Views
             };
 
             var contentGrid = new Grid { Margin = new Thickness(20) };
-            contentGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            contentGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            contentGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            contentGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength() });  // Using default constructor for Auto
+
+            // Create a grid for the icon and message to be properly positioned
+            var messageGrid = new Grid();
+            messageGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength() });  // Using default constructor for Auto
+            messageGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            Grid.SetRow(messageGrid, 0);
 
             var iconControl = new Image
             {
                 Width = 48,
                 Height = 48,
-                HorizontalAlignment = HorizontalAlignment.Left,
-                VerticalAlignment = VerticalAlignment.Top,
-                Margin = new Thickness(0, 0, 10, 0)
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 15, 0)  // Add more right margin for better spacing
             };
 
             switch (icon)
@@ -99,23 +105,38 @@ namespace DriveSync.WPF.Views
                     break;
             }
 
+            // Add icon to first column if it's visible
+            if (icon != MessageBoxImage.None)
+            {
+                Grid.SetColumn(iconControl, 0);
+                messageGrid.Children.Add(iconControl);
+            }
+
             var messageTextBlock = new TextBlock
             {
                 Text = message,
                 TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(icon != MessageBoxImage.None ? 60 : 0, 0, 0, 15),
                 FontSize = 14,
                 FontWeight = FontWeights.Bold,
+                VerticalAlignment = VerticalAlignment.Center,
                 Foreground = effectiveTheme.Equals("Dark", StringComparison.OrdinalIgnoreCase)
                     ? Brushes.White
                     : new SolidColorBrush(Color.FromRgb(33, 33, 33))
             };
-            Grid.SetRow(messageTextBlock, 0);
+
+            // Set message to second column
+            Grid.SetColumn(messageTextBlock, icon != MessageBoxImage.None ? 1 : 0);
+            messageGrid.Children.Add(messageTextBlock);
+
+            // Add message grid to content grid
+            contentGrid.Children.Add(messageGrid);
 
             var buttonPanel = new StackPanel
             {
                 Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Center
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Margin = new Thickness(0, 15, 0, 0)  // Add top margin for spacing from message
             };
             Grid.SetRow(buttonPanel, 1);
 
@@ -173,10 +194,7 @@ namespace DriveSync.WPF.Views
                     break;
             }
 
-            contentGrid.Children.Add(iconControl);
-            contentGrid.Children.Add(messageTextBlock);
             contentGrid.Children.Add(buttonPanel);
-
             mainBorder.Child = contentGrid;
             messageWindow.Content = mainBorder;
 
