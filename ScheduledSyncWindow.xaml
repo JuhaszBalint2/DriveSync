@@ -14,6 +14,22 @@
     TextOptions.TextFormattingMode="Display"
     TextOptions.TextRenderingMode="ClearType">
 
+    <views:ModernWindowBase.Resources>
+        <!-- Custom Style for ComboBoxItem with centered content -->
+        <Style x:Key="CenteredComboBoxItemStyle" TargetType="ComboBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+
+        <!-- Custom Style for ComboBox with centered selection -->
+        <Style x:Key="CenteredComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource CenteredComboBoxItemStyle}"/>
+        </Style>
+    </views:ModernWindowBase.Resources>
+
     <Grid Margin="13">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -153,17 +169,21 @@
                   Height="32" 
                   Width="190"
                   VerticalContentAlignment="Center"
+                  HorizontalContentAlignment="Center"
                   Margin="0,3,0,0"
-                  HorizontalAlignment="Left">
+                  HorizontalAlignment="Left"
+                  Style="{StaticResource CenteredComboBoxStyle}">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding Value, Converter={StaticResource LocalizationConverter}}"
-                               FontSize="12"/>
+                               FontSize="12"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
                     </StackPanel>
-                    
+
                     <!-- SCHEDULE OPTIONS -->
                     <Grid Grid.Row="2" Margin="0,13,0,0">
                         <Grid.ColumnDefinitions>
@@ -202,6 +222,8 @@
                                   Grid.Column="4" Grid.Row="0"
                                   Height="32" 
                                   VerticalContentAlignment="Center"
+                                  HorizontalContentAlignment="Center"
+                                  Style="{StaticResource CenteredComboBoxStyle}"
                                   Margin="7,0,0,0"/>
 
                         <!-- Repeat -->
@@ -215,6 +237,8 @@
                                   Grid.Column="1" Grid.Row="1"
                                   Height="32"
                                   VerticalContentAlignment="Center"
+                                  HorizontalContentAlignment="Center"
+                                  Style="{StaticResource CenteredComboBoxStyle}"
                                   Margin="7,13,0,0">
                             <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[OneTimeSyncOption]}"
                                          FontSize="12"/>
@@ -269,10 +293,19 @@
                                        FontSize="12"
                                        VerticalAlignment="Center"
                                        Margin="0,0,7,0"/>
-                            <TextBox x:Name="IdleDurationBox"
+                            <ComboBox x:Name="IdleDurationCombo"
                                      Width="51"
                                      Height="32"
-                                     VerticalContentAlignment="Center"/>
+                                     VerticalContentAlignment="Center"
+                                     HorizontalContentAlignment="Center"
+                                     Style="{StaticResource CenteredComboBoxStyle}">
+                                <ComboBoxItem Content="5"/>
+                                <ComboBoxItem Content="10"/>
+                                <ComboBoxItem Content="15"/>
+                                <ComboBoxItem Content="20"/>
+                                <ComboBoxItem Content="30"/>
+                                <ComboBoxItem Content="60"/>
+                            </ComboBox>
                             <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Minutes]}"
                                        Style="{DynamicResource BodyTextStyle}"
                                        FontSize="12"
@@ -293,6 +326,8 @@
                         <ComboBox x:Name="NetworkCombo"
                                   Height="32" 
                                   VerticalContentAlignment="Center"
+                                  HorizontalContentAlignment="Center"
+                                  Style="{StaticResource CenteredComboBoxStyle}"
                                   Margin="0,0,0,7">
                             <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[AnyNetwork]}"
                                          FontSize="12"/>
@@ -349,7 +384,8 @@
                             <TextBox x:Name="ExecutionTimeLimitBox"
                                      Width="51"
                                      Height="32"
-                                     VerticalContentAlignment="Center"/>
+                                     VerticalContentAlignment="Center"
+                                     TextAlignment="Center"/>
                             <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Minutes]}"
                                        Style="{DynamicResource BodyTextStyle}"
                                        FontSize="12"
@@ -371,6 +407,8 @@
                                   Height="32" 
                                   Width="170"
                                   VerticalContentAlignment="Center"
+                                  HorizontalContentAlignment="Center"
+                                  Style="{StaticResource CenteredComboBoxStyle}"
                                   HorizontalAlignment="Left">
                             <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[QueueInstances]}"
                                          FontSize="12"/>

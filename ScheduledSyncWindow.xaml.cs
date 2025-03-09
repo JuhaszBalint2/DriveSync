@@ -19,7 +19,7 @@ namespace DriveSync.WPF.Views
 {
     public partial class ScheduledSyncWindow : ModernWindowBase, INotifyPropertyChanged
     {
-        // Dependency fields
+        // Dependency and core service fields
         private readonly IRcloneService _rcloneService;
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger<ScheduledSyncWindow> _logger;
@@ -242,7 +242,20 @@ namespace DriveSync.WPF.Views
             }
             int defaultIndex = StartTimeCombo.Items.IndexOf("08:00");
             StartTimeCombo.SelectedIndex = defaultIndex >= 0 ? defaultIndex : 0;
+
+            if (IdleDurationCombo != null)
+            {
+                var defaultIdleDurationItem = IdleDurationCombo.Items
+                    .Cast<ComboBoxItem>()
+                    .FirstOrDefault(item => item.Content.ToString() == "10");
+
+                if (defaultIdleDurationItem != null)
+                {
+                    IdleDurationCombo.SelectedItem = defaultIdleDurationItem;
+                }
+            }
         }
+
         private void BrowseSource_Click(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrWhiteSpace(SelectedSourceRemote))
@@ -458,7 +471,8 @@ namespace DriveSync.WPF.Views
                         if (RunOnlyIfIdleCheckBox.IsChecked == true)
                         {
                             settingsElem.SetElementValue(settingsNs + "RunOnlyIfIdle", "true");
-                            if (int.TryParse(IdleDurationBox.Text, out int idleMins) && idleMins > 0)
+                            if (IdleDurationCombo.SelectedItem is ComboBoxItem selectedItem &&
+                                int.TryParse(selectedItem.Content.ToString(), out int idleMins) && idleMins > 0)
                             {
                                 XElement idleSettings = settingsElem.Element(settingsNs + "IdleSettings");
                                 if (idleSettings == null)
