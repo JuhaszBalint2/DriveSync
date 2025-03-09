@@ -19,14 +19,422 @@
         <Style x:Key="CenteredComboBoxItemStyle" TargetType="ComboBoxItem">
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource ListItemHoverBrush}"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource ListItemSelectedBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Standard ComboBoxItem Style (for remotes, not centered) -->
+        <Style x:Key="StandardComboBoxItemStyle" TargetType="ComboBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource ListItemHoverBrush}"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource ListItemSelectedBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <!-- Custom Style for ComboBox with centered selection -->
         <Style x:Key="CenteredComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="8,4"/>
             <Setter Property="ItemContainerStyle" Value="{StaticResource CenteredComboBoxItemStyle}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border x:Name="border"
+                                Grid.ColumnSpan="2"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"/>
+
+                            <ToggleButton Grid.ColumnSpan="2"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="Transparent" BorderThickness="0"/>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <ContentPresenter Grid.Column="0"
+                                        IsHitTestVisible="False"
+                                        Content="{TemplateBinding SelectionBoxItem}"
+                                        ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                        ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                        Margin="{TemplateBinding Padding}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"/>
+
+                            <Path Grid.Column="1"
+                                  x:Name="arrow"
+                                  Data="M0,0 L4,4 L8,0 Z"
+                                  Fill="{DynamicResource TextPrimaryBrush}"
+                                  Width="8"
+                                  Height="4"
+                                  Margin="0,0,8,0"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  IsHitTestVisible="False"/>
+
+                            <Popup x:Name="PART_Popup"
+                                   Grid.ColumnSpan="2"
+                                   AllowsTransparency="True"
+                                   IsOpen="{Binding Path=IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Placement="Bottom"
+                                   PopupAnimation="Slide">
+                                <Border x:Name="dropDownBorder"
+                                        MinWidth="{Binding ActualWidth, ElementName=border}"
+                                        MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                        Background="{DynamicResource SurfaceBrush}"
+                                        BorderBrush="{DynamicResource BorderDefaultBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource ListItemHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsDropDownOpen" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}"/>
+                                <Setter TargetName="arrow" Property="Data" Value="M0,4 L4,0 L8,4 Z"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Standard ComboBox Style (for remotes, not centered) -->
+        <Style x:Key="StandardComboBoxStyle" TargetType="ComboBox">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource StandardComboBoxItemStyle}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border x:Name="border"
+                                Grid.ColumnSpan="2"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"/>
+
+                            <ToggleButton Grid.ColumnSpan="2"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    IsChecked="{Binding Path=IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="Transparent" BorderThickness="0"/>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <ContentPresenter Grid.Column="0"
+                                        IsHitTestVisible="False"
+                                        Content="{TemplateBinding SelectionBoxItem}"
+                                        ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                        ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                        Margin="{TemplateBinding Padding}"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Center"/>
+
+                            <Path Grid.Column="1"
+                                  x:Name="arrow"
+                                  Data="M0,0 L4,4 L8,0 Z"
+                                  Fill="{DynamicResource TextPrimaryBrush}"
+                                  Width="8"
+                                  Height="4"
+                                  Margin="0,0,8,0"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  IsHitTestVisible="False"/>
+
+                            <Popup x:Name="PART_Popup"
+                                   Grid.ColumnSpan="2"
+                                   AllowsTransparency="True"
+                                   IsOpen="{Binding Path=IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Placement="Bottom"
+                                   PopupAnimation="Slide">
+                                <Border x:Name="dropDownBorder"
+                                        MinWidth="{Binding ActualWidth, ElementName=border}"
+                                        MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                        Background="{DynamicResource SurfaceBrush}"
+                                        BorderBrush="{DynamicResource BorderDefaultBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource ListItemHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsDropDownOpen" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}"/>
+                                <Setter TargetName="arrow" Property="Data" Value="M0,4 L4,0 L8,4 Z"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Styled TextBox -->
+        <Style x:Key="ThemedTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4">
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                    Padding="{TemplateBinding Padding}"
+                                    Background="Transparent"
+                                    VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}"/>
+                                <Setter Property="Background" Value="{DynamicResource ListItemHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Styled DatePicker -->
+        <Style x:Key="ThemedDatePickerStyle" TargetType="DatePicker">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DatePicker">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="0"
+                                Grid.ColumnSpan="2"
+                                CornerRadius="4">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <DatePickerTextBox x:Name="PART_TextBox"
+                                             Grid.Column="0"
+                                             Focusable="{TemplateBinding Focusable}"
+                                             HorizontalContentAlignment="Center"
+                                             Grid.Row="0"
+                                             VerticalContentAlignment="Center"/>
+                                    <Button x:Name="PART_Button"
+                                            Grid.Column="1"
+                                            Focusable="False"
+                                            Margin="0,0,4,0"
+                                            Padding="0"
+                                            Height="28"
+                                            Width="28"
+                                            VerticalAlignment="Center"
+                                            Background="Transparent"
+                                            BorderThickness="0">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Grid>
+                                                    <Path Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z"
+                                                          Fill="{DynamicResource TextSecondaryBrush}" 
+                                                          Width="16" 
+                                                          Height="16" 
+                                                          HorizontalAlignment="Center" 
+                                                          VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                            <Popup x:Name="PART_Popup" 
+                               StaysOpen="False"
+                               AllowsTransparency="True"
+                               PopupAnimation="Slide"
+                               PlacementTarget="{Binding ElementName=PART_Button}">
+                                <Calendar x:Name="PART_Calendar"
+                                     Background="{DynamicResource SurfaceBrush}"
+                                     BorderBrush="{DynamicResource BorderDefaultBrush}"
+                                     BorderThickness="1"/>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Styled DatePickerTextBox -->
+        <Style x:Key="ThemedDatePickerTextBoxStyle" TargetType="DatePickerTextBox">
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="4,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DatePickerTextBox">
+                        <Grid>
+                            <TextBox x:Name="PART_TextBox"
+                                Text="{Binding Path=Text, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=PropertyChanged}"
+                                Background="{TemplateBinding Background}"
+                                Foreground="{TemplateBinding Foreground}"
+                                BorderBrush="Transparent"
+                                BorderThickness="0"
+                                Margin="4,0"
+                                Padding="4,0"
+                                VerticalAlignment="Center"
+                                VerticalContentAlignment="Center"
+                                HorizontalContentAlignment="Center"
+                                HorizontalAlignment="Stretch"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Styled CheckBox -->
+        <Style x:Key="ThemedCheckBoxStyle" TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderDefaultBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid x:Name="templateRoot" Background="Transparent">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border x:Name="checkBoxBorder"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    Background="{DynamicResource SurfaceBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    HorizontalAlignment="Left"
+                                    Margin="1"
+                                    VerticalAlignment="Center"
+                                    Width="18"
+                                    Height="18"
+                                    CornerRadius="3">
+                                <Path x:Name="checkMark"
+                                      Data="M 4,9 L 7,12 L 14,5"
+                                      Stroke="{DynamicResource TextPrimaryBrush}"
+                                      StrokeThickness="2"
+                                      Visibility="Collapsed"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Margin="-3,-1,-3,-1"/>
+                            </Border>
+                            <ContentPresenter x:Name="contentPresenter"
+                                              Grid.Column="1"
+                                              Focusable="False"
+                                              HorizontalAlignment="Left"
+                                              Margin="8,0,0,0"
+                                              RecognizesAccessKey="True"
+                                              VerticalAlignment="Center"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Background" TargetName="checkBoxBorder" Value="{DynamicResource ListItemSelectedBrush}"/>
+                                <Setter Property="BorderBrush" TargetName="checkBoxBorder" Value="{DynamicResource BorderDefaultBrush}"/>
+                                <Setter Property="Visibility" TargetName="checkMark" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="BorderBrush" TargetName="checkBoxBorder" Value="{DynamicResource BorderDefaultBrush}"/>
+                                <Setter Property="Background" TargetName="checkBoxBorder" Value="{DynamicResource ListItemHoverBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </views:ModernWindowBase.Resources>
 
@@ -72,7 +480,8 @@
                                       SelectedItem="{Binding SelectedSourceRemote}"
                                       Height="32" 
                                       VerticalContentAlignment="Center"
-                                      Margin="0,0,0,3"/>
+                                      Margin="0,0,0,3"
+                                      Style="{StaticResource StandardComboBoxStyle}"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -124,7 +533,8 @@
                                       SelectedItem="{Binding SelectedTargetRemote}"
                                       Height="32" 
                                       VerticalContentAlignment="Center"
-                                      Margin="0,0,0,3"/>
+                                      Margin="0,0,0,3"
+                                      Style="{StaticResource StandardComboBoxStyle}"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -168,8 +578,6 @@
                   SelectedItem="{Binding SelectedSyncMode}"
                   Height="32" 
                   Width="190"
-                  VerticalContentAlignment="Center"
-                  HorizontalContentAlignment="Center"
                   Margin="0,3,0,0"
                   HorizontalAlignment="Left"
                   Style="{StaticResource CenteredComboBoxStyle}">
@@ -210,7 +618,8 @@
                                     Grid.Column="1" Grid.Row="0"
                                     Height="32"
                                     VerticalContentAlignment="Center"
-                                    Margin="7,0,0,0"/>
+                                    Margin="7,0,0,0"
+                                    Style="{StaticResource ThemedDatePickerStyle}"/>
 
                         <!-- Time -->
                         <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[StartTime]}"
@@ -220,11 +629,9 @@
                                    VerticalAlignment="Center"/>
                         <ComboBox x:Name="StartTimeCombo"
                                   Grid.Column="4" Grid.Row="0"
-                                  Height="32" 
-                                  VerticalContentAlignment="Center"
-                                  HorizontalContentAlignment="Center"
-                                  Style="{StaticResource CenteredComboBoxStyle}"
-                                  Margin="7,0,0,0"/>
+                                  Height="32"
+                                  Margin="7,0,0,0"
+                                  Style="{StaticResource CenteredComboBoxStyle}"/>
 
                         <!-- Repeat -->
                         <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Repeat]}" 
@@ -236,10 +643,8 @@
                         <ComboBox x:Name="RepeatTypeCombo"
                                   Grid.Column="1" Grid.Row="1"
                                   Height="32"
-                                  VerticalContentAlignment="Center"
-                                  HorizontalContentAlignment="Center"
-                                  Style="{StaticResource CenteredComboBoxStyle}"
-                                  Margin="7,13,0,0">
+                                  Margin="7,13,0,0"
+                                  Style="{StaticResource CenteredComboBoxStyle}">
                             <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[OneTimeSyncOption]}"
                                          FontSize="12"/>
                             <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DailySyncOption]}"
@@ -269,15 +674,18 @@
                         <CheckBox x:Name="OnACPowerCheckBox"
                                   Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[OnACPowerStart]}"
                                   FontSize="12"
-                                  Margin="0,0,0,3"/>
+                                  Margin="0,0,0,3"
+                                  Style="{StaticResource ThemedCheckBoxStyle}"/>
                         <CheckBox x:Name="StopOnBatteryCheckBox"
                                   Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[StopOnBattery]}"
                                   FontSize="12"
-                                  Margin="0,0,0,3"/>
+                                  Margin="0,0,0,3"
+                                  Style="{StaticResource ThemedCheckBoxStyle}"/>
                         <CheckBox x:Name="WakeToRunCheckBox"
                                   Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[WakeToRun]}"
                                   FontSize="12"
-                                  Margin="0,0,0,7"/>
+                                  Margin="0,0,0,7"
+                                  Style="{StaticResource ThemedCheckBoxStyle}"/>
 
                         <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[IdleSettingsSection]}"
                                    Style="{DynamicResource SubheadingStyle}"
@@ -286,7 +694,8 @@
                         <CheckBox x:Name="RunOnlyIfIdleCheckBox"
                                   Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[RunOnlyIfIdle]}"
                                   FontSize="12"
-                                  Margin="0,0,0,3"/>
+                                  Margin="0,0,0,3"
+                                  Style="{StaticResource ThemedCheckBoxStyle}"/>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[IdleDuration]}"
                                        Style="{DynamicResource BodyTextStyle}"
@@ -296,8 +705,6 @@
                             <ComboBox x:Name="IdleDurationCombo"
                                      Width="51"
                                      Height="32"
-                                     VerticalContentAlignment="Center"
-                                     HorizontalContentAlignment="Center"
                                      Style="{StaticResource CenteredComboBoxStyle}">
                                 <ComboBoxItem Content="5"/>
                                 <ComboBoxItem Content="10"/>
@@ -322,12 +729,11 @@
                         <CheckBox x:Name="RunOnlyIfNetworkAvailableCheckBox"
                                   Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[RunOnlyIfNetworkAvailable]}"
                                   FontSize="12"
-                                  Margin="0,0,0,3"/>
+                                  Margin="0,0,0,3"
+                                  Style="{StaticResource ThemedCheckBoxStyle}"/>
                         <ComboBox x:Name="NetworkCombo"
                                   Height="32" 
-                                  VerticalContentAlignment="Center"
-                                  HorizontalContentAlignment="Center"
-                                  Style="{StaticResource CenteredComboBoxStyle}"
+                                  Style="{StaticResource StandardComboBoxStyle}"
                                   Margin="0,0,0,7">
                             <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[AnyNetwork]}"
                                          FontSize="12"/>
@@ -340,15 +746,18 @@
                         <CheckBox x:Name="StartWhenAvailableCheckBox"
                                   Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[StartWhenMissed]}"
                                   FontSize="12"
-                                  Margin="0,0,0,3"/>
+                                  Margin="0,0,0,3"
+                                  Style="{StaticResource ThemedCheckBoxStyle}"/>
                         <CheckBox x:Name="AllowDemandStartCheckBox"
                                   Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[AllowDemandStart]}"
                                   FontSize="12"
-                                  Margin="0,0,0,3"/>
+                                  Margin="0,0,0,3"
+                                  Style="{StaticResource ThemedCheckBoxStyle}"/>
                         <CheckBox x:Name="ForceKillCheckBox"
                                   Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ForceStopIfNotEnding]}"
                                   FontSize="12"
-                                  Margin="0,0,0,3"/>
+                                  Margin="0,0,0,3"
+                                  Style="{StaticResource ThemedCheckBoxStyle}"/>
                     </StackPanel>
                 </Grid>
             </TabItem>
@@ -369,23 +778,27 @@
                         <CheckBox x:Name="DisableTaskCheckBox"
                                   Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[DisableTask]}"
                                   FontSize="12"
-                                  Margin="0,0,0,3"/>
+                                  Margin="0,0,0,3"
+                                  Style="{StaticResource ThemedCheckBoxStyle}"/>
                         <CheckBox x:Name="HiddenTaskCheckBox"
                                   Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[HiddenTask]}"
                                   FontSize="12"
-                                  Margin="0,0,0,7"/>
+                                  Margin="0,0,0,7"
+                                  Style="{StaticResource ThemedCheckBoxStyle}"/>
 
                         <StackPanel Orientation="Horizontal">
                             <CheckBox x:Name="StopAfterCheckBox"
                                       Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[StopAfter]}"
                                       FontSize="12"
                                       VerticalAlignment="Center"
-                                      Margin="0,0,7,0"/>
+                                      Margin="0,0,7,0"
+                                      Style="{StaticResource ThemedCheckBoxStyle}"/>
                             <TextBox x:Name="ExecutionTimeLimitBox"
                                      Width="51"
                                      Height="32"
                                      VerticalContentAlignment="Center"
-                                     TextAlignment="Center"/>
+                                     TextAlignment="Center"
+                                     Style="{StaticResource ThemedTextBoxStyle}"/>
                             <TextBlock Text="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[Minutes]}"
                                        Style="{DynamicResource BodyTextStyle}"
                                        FontSize="12"
@@ -406,10 +819,8 @@
                         <ComboBox x:Name="MultipleInstancesCombo"
                                   Height="32" 
                                   Width="170"
-                                  VerticalContentAlignment="Center"
-                                  HorizontalContentAlignment="Center"
-                                  Style="{StaticResource CenteredComboBoxStyle}"
-                                  HorizontalAlignment="Left">
+                                  HorizontalAlignment="Left"
+                                  Style="{StaticResource CenteredComboBoxStyle}">
                             <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[QueueInstances]}"
                                          FontSize="12"/>
                             <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[StopExistingInstances]}"
