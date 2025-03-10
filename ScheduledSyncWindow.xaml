@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:loc="clr-namespace:DriveSync.WPF.Localization"
     xmlns:views="clr-namespace:DriveSync.WPF.Views"
+    xmlns:fa="http://schemas.fontawesome.io/icons/"
     Title="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[ScheduleSyncTitle]}"
     Height="476"
     Width="595"
@@ -317,10 +318,11 @@
                                         <Button.Template>
                                             <ControlTemplate TargetType="Button">
                                                 <Grid>
-                                                    <Path Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M16.2,16.2L11,13V7H12.5V12.2L17,14.9L16.2,16.2Z"
+                                                    <!-- Proper calendar icon here -->
+                                                    <Path Data="M7,2H21V21H3V4H7V2M7,6H5V8H7V6M7,10H5V12H7V10M7,14H5V16H7V14M7,18H5V20H7V18M11,6H9V8H11V6M11,10H9V12H11V10M11,14H9V16H11V14M11,18H9V20H11V18M15,6H13V8H15V6M15,10H13V12H15V10M15,14H13V16H15V14M15,18H13V20H15V18M19,6H17V8H19V6M19,10H17V12H19V10M19,14H17V16H19V14M19,18H17V20H19V18Z"
                                                           Fill="{DynamicResource TextSecondaryBrush}" 
-                                                          Width="16" 
-                                                          Height="16" 
+                                                          Width="24" 
+                                                          Height="24" 
                                                           HorizontalAlignment="Center" 
                                                           VerticalAlignment="Center"/>
                                                 </Grid>
@@ -733,7 +735,7 @@
                                   Style="{StaticResource ThemedCheckBoxStyle}"/>
                         <ComboBox x:Name="NetworkCombo"
                                   Height="32" 
-                                  Style="{StaticResource StandardComboBoxStyle}"
+                                  Style="{StaticResource CenteredComboBoxStyle}"
                                   Margin="0,0,0,7">
                             <ComboBoxItem Content="{Binding Source={x:Static loc:LocalizationManager.Instance}, Path=[AnyNetwork]}"
                                          FontSize="12"/>
