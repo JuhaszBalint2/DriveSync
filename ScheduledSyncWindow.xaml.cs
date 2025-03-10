@@ -14,6 +14,7 @@ using Microsoft.Win32.TaskScheduler;
 using DriveSync.Infrastructure.Services;
 using DriveSync.WPF.ViewModels;
 using DriveSync.WPF.Localization;
+using System.Text.RegularExpressions;
 
 namespace DriveSync.WPF.Views
 {
@@ -304,7 +305,7 @@ namespace DriveSync.WPF.Views
         {
             try
             {
-                // Input validation (keep existing validation code)
+                // Input validation
                 if (string.IsNullOrWhiteSpace(SelectedSourceRemote) || string.IsNullOrWhiteSpace(SourcePath))
                 {
                     ThemedMessageBox.Show(
@@ -354,10 +355,51 @@ namespace DriveSync.WPF.Views
                     string rclonePath = GetRclonePath();
                     _logger.LogInformation($"Using rclone path: {rclonePath}");
 
+                    // Create descriptive task name
+                    string CreateDescriptiveTaskName()
+                    {
+                        // Base format: DriveSync_[SyncMode]_[SourceRemote]_to_[TargetRemote]_[Timestamp]
+                        string syncModeShorthand = SelectedSyncMode.Value switch
+                        {
+                            SyncType.Mirror => "Mirror",
+                            SyncType.Backup => "Backup",
+                            SyncType.Move => "Move",
+                            _ => "Sync"
+                        };
+
+                        // Sanitize remote names to remove special characters and spaces
+                        string sanitizedSourceRemote = Regex.Replace(SelectedSourceRemote, @"[^\w\-]", "_");
+                        string sanitizedTargetRemote = Regex.Replace(SelectedTargetRemote, @"[^\w\-]", "_");
+
+                        // Truncate remote names if they're too long
+                        sanitizedSourceRemote = sanitizedSourceRemote.Length > 20
+                            ? sanitizedSourceRemote.Substring(0, 20)
+                            : sanitizedSourceRemote;
+
+                        sanitizedTargetRemote = sanitizedTargetRemote.Length > 20
+                            ? sanitizedTargetRemote.Substring(0, 20)
+                            : sanitizedTargetRemote;
+
+                        // Create timestamp in a compact format
+                        string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+                        // Construct the task name
+                        string taskName = $"DriveSync_{syncModeShorthand}_{sanitizedSourceRemote}_to_{sanitizedTargetRemote}_{timestamp}";
+
+                        // Ensure the task name is valid (Windows has some restrictions on task names)
+                        taskName = new string(taskName.Select(c =>
+                                            char.IsLetterOrDigit(c) || c == '_' || c == '-'
+                                            ? c
+                                            : '_').ToArray());
+
+                        return taskName;
+                    }
+
                     // Create new task definition
                     var td = ts.NewTask();
 
                     // Set basic task properties
+                    string taskName = CreateDescriptiveTaskName();
                     td.RegistrationInfo.Description = $"Scheduled DriveSync ({SelectedSyncMode.Value}) from {SelectedSourceRemote}:{SourcePath} to {SelectedTargetRemote}:{TargetPath}";
                     td.Principal.LogonType = TaskLogonType.InteractiveToken;
                     td.Principal.RunLevel = TaskRunLevel.Highest;
@@ -389,7 +431,7 @@ namespace DriveSync.WPF.Views
                             break;
                     }
 
-                    // Configure task settings using TaskService properties
+                    // Configure task settings
                     td.Settings.Enabled = !DisableTaskCheckBox.IsChecked.GetValueOrDefault();
                     td.Settings.Hidden = HiddenTaskCheckBox.IsChecked.GetValueOrDefault();
 
@@ -476,41 +518,26 @@ namespace DriveSync.WPF.Views
                     ));
 
                     // Register the task
-                    string taskName = $"DriveSync_Scheduled_{Guid.NewGuid()}";
-                    try
-                    {
-                        ts.RootFolder.RegisterTaskDefinition(
-                            taskName,
-                            td,
-                            TaskCreation.Create,
-                            null,
-                            null,
-                            TaskLogonType.InteractiveToken
-                        );
+                    ts.RootFolder.RegisterTaskDefinition(
+                        taskName,
+                        td,
+                        TaskCreation.Create,
+                        null,
+                        null,
+                        TaskLogonType.InteractiveToken
+                    );
 
-                        _logger.LogInformation($"Task {taskName} created successfully");
+                    _logger.LogInformation($"Task {taskName} created successfully");
 
-                        ThemedMessageBox.Show(
-                            string.Format(LocalizationManager.Instance["ScheduledTaskCreatedSuccessfully"], taskName),
-                            LocalizationManager.Instance["Success"],
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Information
-                        );
+                    ThemedMessageBox.Show(
+                        string.Format(LocalizationManager.Instance["ScheduledTaskCreatedSuccessfully"], taskName),
+                        LocalizationManager.Instance["Success"],
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information
+                    );
 
-                        DialogResult = true;
-                        Close();
-                    }
-                    catch (Exception taskRegEx)
-                    {
-                        _logger.LogError(taskRegEx, $"Failed to register task {taskName}");
-
-                        ThemedMessageBox.Show(
-                            $"Failed to create scheduled task: {taskRegEx.Message}",
-                            LocalizationManager.Instance["Error"],
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Error
-                        );
-                    }
+                    DialogResult = true;
+                    Close();
                 }
             }
             catch (Exception ex)
@@ -525,7 +552,6 @@ namespace DriveSync.WPF.Views
                 );
             }
         }
-
         // Helper method to safely add or update XML elements
         private void AddOrUpdateXmlElement(XElement parentElement, XNamespace ns, string elementName, string value)
         {
