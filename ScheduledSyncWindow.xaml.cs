@@ -304,7 +304,7 @@ namespace DriveSync.WPF.Views
         {
             try
             {
-                // Validate inputs
+                // Input validation (keep existing validation code)
                 if (string.IsNullOrWhiteSpace(SelectedSourceRemote) || string.IsNullOrWhiteSpace(SourcePath))
                 {
                     ThemedMessageBox.Show(
@@ -354,14 +354,15 @@ namespace DriveSync.WPF.Views
                     string rclonePath = GetRclonePath();
                     _logger.LogInformation($"Using rclone path: {rclonePath}");
 
-                    // Create new task with basic settings
+                    // Create new task definition
                     var td = ts.NewTask();
-                    td.RegistrationInfo.Description =
-                        $"Scheduled DriveSync ({SelectedSyncMode.Value}) from {SelectedSourceRemote}:{SourcePath} to {SelectedTargetRemote}:{TargetPath}";
+
+                    // Set basic task properties
+                    td.RegistrationInfo.Description = $"Scheduled DriveSync ({SelectedSyncMode.Value}) from {SelectedSourceRemote}:{SourcePath} to {SelectedTargetRemote}:{TargetPath}";
                     td.Principal.LogonType = TaskLogonType.InteractiveToken;
                     td.Principal.RunLevel = TaskRunLevel.Highest;
 
-                    // Set up trigger
+                    // Configure trigger based on selected repeat type
                     var selectedRepeat = (RepeatTypeCombo.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "OneTime";
                     switch (selectedRepeat)
                     {
@@ -388,16 +389,71 @@ namespace DriveSync.WPF.Views
                             break;
                     }
 
-                    // Configure settings
-                    td.Settings.Enabled = true;
-                    td.Settings.Hidden = false;
-                    td.Settings.RunOnlyIfIdle = false;
-                    td.Settings.RunOnlyIfNetworkAvailable = false;
-                    td.Settings.StartWhenAvailable = false;
-                    td.Settings.WakeToRun = false;
-                    td.Settings.ExecutionTimeLimit = TimeSpan.Zero;
-                    td.Settings.MultipleInstances = TaskInstancesPolicy.IgnoreNew;
-                    // Build command and arguments
+                    // Configure task settings using TaskService properties
+                    td.Settings.Enabled = !DisableTaskCheckBox.IsChecked.GetValueOrDefault();
+                    td.Settings.Hidden = HiddenTaskCheckBox.IsChecked.GetValueOrDefault();
+
+                    // Network and idle settings
+                    td.Settings.RunOnlyIfIdle = RunOnlyIfIdleCheckBox.IsChecked.GetValueOrDefault();
+                    td.Settings.RunOnlyIfNetworkAvailable = RunOnlyIfNetworkAvailableCheckBox.IsChecked.GetValueOrDefault();
+
+                    if (RunOnlyIfIdleCheckBox.IsChecked.GetValueOrDefault() &&
+                        IdleDurationCombo.SelectedItem is ComboBoxItem selectedItem &&
+                        int.TryParse(selectedItem.Content.ToString(), out int idleMins))
+                    {
+                        td.Settings.IdleSettings.IdleDuration = TimeSpan.FromMinutes(idleMins);
+                    }
+
+                    // Multiple instance handling
+                    td.Settings.MultipleInstances = MultipleInstancesCombo.SelectedIndex switch
+                    {
+                        0 => TaskInstancesPolicy.Queue,
+                        1 => TaskInstancesPolicy.StopExisting,
+                        2 => TaskInstancesPolicy.IgnoreNew,
+                        3 => TaskInstancesPolicy.Parallel,
+                        _ => TaskInstancesPolicy.IgnoreNew
+                    };
+
+                    // Execution time limit
+                    if (StopAfterCheckBox.IsChecked.GetValueOrDefault() &&
+                        int.TryParse(ExecutionTimeLimitBox.Text, out int limitMins))
+                    {
+                        td.Settings.ExecutionTimeLimit = TimeSpan.FromMinutes(limitMins);
+                    }
+
+                    // Safely modify XML for power and battery settings
+                    try
+                    {
+                        var taskXml = XDocument.Parse(td.XmlText);
+                        XNamespace ns = taskXml.Root.Name.Namespace;
+
+                        var settingsElement = taskXml.Descendants(ns + "Settings").FirstOrDefault();
+                        if (settingsElement != null)
+                        {
+                            // Power settings
+                            if (OnACPowerCheckBox.IsChecked.GetValueOrDefault())
+                            {
+                                AddOrUpdateXmlElement(settingsElement, ns, "DisallowStartIfOnBatteries", "true");
+                            }
+                            if (StopOnBatteryCheckBox.IsChecked.GetValueOrDefault())
+                            {
+                                AddOrUpdateXmlElement(settingsElement, ns, "StopIfGoingOnBatteries", "true");
+                            }
+                            if (WakeToRunCheckBox.IsChecked.GetValueOrDefault())
+                            {
+                                AddOrUpdateXmlElement(settingsElement, ns, "WakeToRun", "true");
+                            }
+                        }
+
+                        // Update the task definition with modified XML
+                        td.XmlText = taskXml.ToString();
+                    }
+                    catch (Exception xmlEx)
+                    {
+                        _logger.LogError(xmlEx, "Error modifying task XML for power settings");
+                    }
+
+                    // Determine command verb
                     string commandVerb = SelectedSyncMode.Value switch
                     {
                         SyncType.Mirror => "sync",
@@ -409,197 +465,78 @@ namespace DriveSync.WPF.Views
                     // Create log file path in the same directory as rclone
                     string logPath = Path.Combine(Path.GetDirectoryName(rclonePath), "rclone_task.log");
 
-                    // Construct the full PowerShell command
+                    // Construct PowerShell command
                     string psScript = $"-WindowStyle Hidden -Command \"& {{& '{rclonePath}' {commandVerb} '{SelectedSourceRemote}:{SourcePath.TrimStart('/')}' '{SelectedTargetRemote}:{TargetPath.TrimStart('/')}' --progress --stats-one-line --stats 1s --quiet > '{logPath}' 2>&1}}\"";
 
-                    var action = new ExecAction(
+                    // Add PowerShell action
+                    td.Actions.Add(new ExecAction(
                         "powershell.exe",
                         psScript,
-                        Path.GetDirectoryName(rclonePath));
-
-                    // Add action to task
-                    td.Actions.Add(action);
-
-                    // Robust XML modification for WindowStyle
-                    try
-                    {
-                        XDocument taskXml = XDocument.Parse(td.XmlText);
-                        XNamespace execNs = taskXml.Root.Name.Namespace;
-
-                        // Find or create the Actions element
-                        var actionsElement = taskXml.Descendants(execNs + "Actions").FirstOrDefault();
-                        if (actionsElement != null)
-                        {
-                            // Find the first Exec element within Actions
-                            var execNode = actionsElement.Descendants(execNs + "Exec").FirstOrDefault();
-                            if (execNode != null)
-                            {
-                                try
-                                {
-                                    // Attempt to add WindowStyle, but handle potential exceptions
-                                    var windowStyleElement = new XElement(execNs + "WindowStyle");
-                                    windowStyleElement.Value = "7";  // SW_SHOWMINNOACTIVE
-                                    execNode.Add(windowStyleElement);
-                                }
-                                catch (Exception xmlEx)
-                                {
-                                    _logger.LogWarning($"Could not add WindowStyle: {xmlEx.Message}");
-                                }
-                            }
-                        }
-
-                        // Safely update the XML text
-                        try
-                        {
-                            td.XmlText = taskXml.ToString();
-                        }
-                        catch (Exception xmlUpdateEx)
-                        {
-                            _logger.LogError($"Error updating task XML: {xmlUpdateEx.Message}");
-                        }
-                    }
-                    catch (Exception xmlParseEx)
-                    {
-                        _logger.LogError($"Error parsing task XML: {xmlParseEx.Message}");
-                    }
-                    // Update settings via XML
-                    XDocument settingsDoc = XDocument.Parse(td.XmlText);
-                    XNamespace settingsNs = settingsDoc.Root?.Name.Namespace ?? "http://schemas.microsoft.com/windows/2004/02/mit/task";
-                    XElement settingsElem = settingsDoc.Descendants(settingsNs + "Settings").FirstOrDefault();
-
-                    if (settingsElem != null)
-                    {
-                        if (OnACPowerCheckBox.IsChecked == true)
-                            settingsElem.SetElementValue(settingsNs + "DisallowStartIfOnBatteries", "true");
-                        if (StopOnBatteryCheckBox.IsChecked == true)
-                            settingsElem.SetElementValue(settingsNs + "StopIfGoingOnBatteries", "true");
-                        if (WakeToRunCheckBox.IsChecked == true)
-                            settingsElem.SetElementValue(settingsNs + "WakeToRun", "true");
-
-                        if (RunOnlyIfIdleCheckBox.IsChecked == true)
-                        {
-                            settingsElem.SetElementValue(settingsNs + "RunOnlyIfIdle", "true");
-                            if (IdleDurationCombo.SelectedItem is ComboBoxItem selectedItem &&
-                                int.TryParse(selectedItem.Content.ToString(), out int idleMins) && idleMins > 0)
-                            {
-                                XElement idleSettings = settingsElem.Element(settingsNs + "IdleSettings");
-                                if (idleSettings == null)
-                                {
-                                    idleSettings = new XElement(settingsNs + "IdleSettings");
-                                    settingsElem.Add(idleSettings);
-                                }
-                                idleSettings.SetElementValue(settingsNs + "Duration", $"PT{idleMins}M");
-                            }
-                        }
-
-                        if (RunOnlyIfNetworkAvailableCheckBox.IsChecked == true)
-                        {
-                            settingsElem.SetElementValue(settingsNs + "RunOnlyIfNetworkAvailable", "true");
-                            string selectedNetwork = NetworkCombo.SelectedItem?.ToString() ?? "Any network";
-                            if (!string.Equals(selectedNetwork, "Any network", StringComparison.OrdinalIgnoreCase))
-                            {
-                                XElement networkSettings = settingsElem.Element(settingsNs + "NetworkSettings");
-                                if (networkSettings == null)
-                                {
-                                    networkSettings = new XElement(settingsNs + "NetworkSettings");
-                                    settingsElem.Add(networkSettings);
-                                }
-                                networkSettings.SetElementValue(settingsNs + "Name", selectedNetwork);
-                            }
-                        }
-
-                        if (AllowDemandStartCheckBox.IsChecked == false)
-                            settingsElem.SetElementValue(settingsNs + "DisallowDemandStart", "true");
-
-                        var selectedInstances = (MultipleInstancesCombo.SelectedItem as ComboBoxItem)?.Content?.ToString();
-                        switch (selectedInstances)
-                        {
-                            case "Queue": td.Settings.MultipleInstances = TaskInstancesPolicy.Queue; break;
-                            case "StopExisting": td.Settings.MultipleInstances = TaskInstancesPolicy.StopExisting; break;
-                            case "IgnoreNew": td.Settings.MultipleInstances = TaskInstancesPolicy.IgnoreNew; break;
-                            case "Parallel": td.Settings.MultipleInstances = TaskInstancesPolicy.Parallel; break;
-                        }
-
-                        if (StopAfterCheckBox.IsChecked == true && int.TryParse(ExecutionTimeLimitBox.Text, out int limitMins))
-                            td.Settings.ExecutionTimeLimit = TimeSpan.FromMinutes(limitMins);
-
-                        if (ForceKillCheckBox.IsChecked == true)
-                            settingsElem.SetElementValue(settingsNs + "DisallowHardTerminate", "false");
-
-                        if (StartWhenAvailableCheckBox.IsChecked == true)
-                            settingsElem.SetElementValue(settingsNs + "StartWhenAvailable", "true");
-
-                        if (DisableTaskCheckBox.IsChecked == true)
-                            settingsElem.SetElementValue(settingsNs + "Enabled", "false");
-
-                        if (HiddenTaskCheckBox.IsChecked == true)
-                            settingsElem.SetElementValue(settingsNs + "Hidden", "true");
-
-                        td.XmlText = settingsDoc.ToString();
-                    }
-
-                    _logger.LogInformation("Final task XML before registration:");
-                    _logger.LogInformation(td.XmlText);
+                        Path.GetDirectoryName(rclonePath)
+                    ));
 
                     // Register the task
                     string taskName = $"DriveSync_Scheduled_{Guid.NewGuid()}";
-                    ts.RootFolder.RegisterTaskDefinition(
-                        taskName,
-                        td,
-                        TaskCreation.Create,
-                        null,
-                        null,
-                        TaskLogonType.InteractiveToken
-                    );
+                    try
+                    {
+                        ts.RootFolder.RegisterTaskDefinition(
+                            taskName,
+                            td,
+                            TaskCreation.Create,
+                            null,
+                            null,
+                            TaskLogonType.InteractiveToken
+                        );
 
-                    ThemedMessageBox.Show(
-                        string.Format(LocalizationManager.Instance["ScheduledTaskCreatedSuccessfully"], taskName),
-                        LocalizationManager.Instance["Success"],
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information
-                    );
+                        _logger.LogInformation($"Task {taskName} created successfully");
 
-                    DialogResult = true;
-                    Close();
+                        ThemedMessageBox.Show(
+                            string.Format(LocalizationManager.Instance["ScheduledTaskCreatedSuccessfully"], taskName),
+                            LocalizationManager.Instance["Success"],
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information
+                        );
+
+                        DialogResult = true;
+                        Close();
+                    }
+                    catch (Exception taskRegEx)
+                    {
+                        _logger.LogError(taskRegEx, $"Failed to register task {taskName}");
+
+                        ThemedMessageBox.Show(
+                            $"Failed to create scheduled task: {taskRegEx.Message}",
+                            LocalizationManager.Instance["Error"],
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error
+                        );
+                    }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Exception details: {ex.ToString()}");
-                _logger.LogError($"Exception message: {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                    _logger.LogError($"Inner exception: {ex.InnerException.Message}");
-                }
+                _logger.LogError(ex, "Exception during scheduled task creation");
 
-                // Check for specific exceptions
-                if (ex is UnauthorizedAccessException)
-                {
-                    ThemedMessageBox.Show(
-                        LocalizationManager.Instance["ScheduledTaskCreationFailedPermissions"],
-                        LocalizationManager.Instance["Error"],
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error
-                    );
-                }
-                else if (ex is ArgumentException)
-                {
-                    ThemedMessageBox.Show(
-                        LocalizationManager.Instance["ScheduledTaskCreationFailedArguments"],
-                        LocalizationManager.Instance["Error"],
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error
-                    );
-                }
-                else
-                {
-                    ThemedMessageBox.Show(
-                        string.Format(LocalizationManager.Instance["ScheduledTaskCreationFailed"], ex.Message),
-                        LocalizationManager.Instance["Error"],
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error
-                    );
-                }
+                ThemedMessageBox.Show(
+                    $"An unexpected error occurred: {ex.Message}",
+                    LocalizationManager.Instance["Error"],
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error
+                );
+            }
+        }
+
+        // Helper method to safely add or update XML elements
+        private void AddOrUpdateXmlElement(XElement parentElement, XNamespace ns, string elementName, string value)
+        {
+            var existingElement = parentElement.Element(ns + elementName);
+            if (existingElement != null)
+            {
+                existingElement.Value = value;
+            }
+            else
+            {
+                parentElement.Add(new XElement(ns + elementName, value));
             }
         }
 
