@@ -307,36 +307,44 @@ namespace DriveSync.WPF.Views
                 // Validate inputs
                 if (string.IsNullOrWhiteSpace(SelectedSourceRemote) || string.IsNullOrWhiteSpace(SourcePath))
                 {
-                    MessageBox.Show("Please select a source remote and path.",
-                                    "Invalid Source",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Warning);
+                    ThemedMessageBox.Show(
+                        LocalizationManager.Instance["PleaseSelectSourceRemoteFirst"],
+                        LocalizationManager.Instance["Error"],
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning
+                    );
                     return;
                 }
                 if (string.IsNullOrWhiteSpace(SelectedTargetRemote) || string.IsNullOrWhiteSpace(TargetPath))
                 {
-                    MessageBox.Show("Please select a target remote and path.",
-                                    "Invalid Target",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Warning);
+                    ThemedMessageBox.Show(
+                        LocalizationManager.Instance["PleaseSelectTargetRemoteFirst"],
+                        LocalizationManager.Instance["Error"],
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning
+                    );
                     return;
                 }
                 if (!StartDatePicker.SelectedDate.HasValue)
                 {
-                    MessageBox.Show("Please select a valid Start Date.",
-                                    "Invalid Date",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Warning);
+                    ThemedMessageBox.Show(
+                        LocalizationManager.Instance["PleaseSelectValidStartDate"],
+                        LocalizationManager.Instance["Error"],
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning
+                    );
                     return;
                 }
                 var startDate = StartDatePicker.SelectedDate.Value;
                 string timeString = StartTimeCombo.SelectedItem?.ToString();
                 if (!TimeSpan.TryParseExact(timeString, "hh\\:mm", CultureInfo.InvariantCulture, out var startTime))
                 {
-                    MessageBox.Show("Invalid time selection.",
-                                    "Invalid Time",
-                                    MessageBoxButton.OK,
-                                    MessageBoxImage.Warning);
+                    ThemedMessageBox.Show(
+                        LocalizationManager.Instance["InvalidStartTime"],
+                        LocalizationManager.Instance["Error"],
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning
+                    );
                     return;
                 }
                 var startBoundary = startDate.Date + startTime;
@@ -544,10 +552,12 @@ namespace DriveSync.WPF.Views
                         TaskLogonType.InteractiveToken
                     );
 
-                    MessageBox.Show($"Scheduled task '{taskName}' created successfully.",
-                                "Task Created",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Information);
+                    ThemedMessageBox.Show(
+                        string.Format(LocalizationManager.Instance["ScheduledTaskCreatedSuccessfully"], taskName),
+                        LocalizationManager.Instance["Success"],
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information
+                    );
 
                     DialogResult = true;
                     Close();
@@ -562,10 +572,34 @@ namespace DriveSync.WPF.Views
                     _logger.LogError($"Inner exception: {ex.InnerException.Message}");
                 }
 
-                MessageBox.Show($"Failed to create scheduled task.\n\nError details:\n{ex.ToString()}\n\nCheck the application logs for more information.",
-                                "Error",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Error);
+                // Check for specific exceptions
+                if (ex is UnauthorizedAccessException)
+                {
+                    ThemedMessageBox.Show(
+                        LocalizationManager.Instance["ScheduledTaskCreationFailedPermissions"],
+                        LocalizationManager.Instance["Error"],
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error
+                    );
+                }
+                else if (ex is ArgumentException)
+                {
+                    ThemedMessageBox.Show(
+                        LocalizationManager.Instance["ScheduledTaskCreationFailedArguments"],
+                        LocalizationManager.Instance["Error"],
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error
+                    );
+                }
+                else
+                {
+                    ThemedMessageBox.Show(
+                        string.Format(LocalizationManager.Instance["ScheduledTaskCreationFailed"], ex.Message),
+                        LocalizationManager.Instance["Error"],
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error
+                    );
+                }
             }
         }
 
